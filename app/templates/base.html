@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KPI Pro - Data Sync System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <h1>📊 KPI Pro</h1>
+                <span class="subtitle">Key Performance Indicator Sync System</span>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/report" class="nav-link">Monthly Report</a></li>
+                <li><a href="/#sync-section" class="nav-link">Sync Data</a></li>
+                <li><a href="/#info-section" class="nav-link">Information</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 KPI Pro System. All rights reserved.</p>
+            <p>Powered by Flask | PostgreSQL | SQL Server</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

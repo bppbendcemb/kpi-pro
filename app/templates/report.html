@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}KPI Monthly Report - KPI Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-section {
+        padding: 2rem 0;
+    }
+    .report-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #f0f2f5;
+        padding-bottom: 1rem;
+    }
+    .report-title h2 {
+        margin: 0;
+        color: #1a202c;
+        font-size: 1.75rem;
+    }
+    .report-title p {
+        margin: 0.5rem 0 0 0;
+        color: #718096;
+    }
+    .year-filter {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .year-select {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        font-size: 1rem;
+    }
+    .table-responsive {
+        overflow-x: auto;
+    }
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    .report-table th, .report-table td {
+        padding: 12px 15px;
+        text-align: right;
+        border-bottom: 1px solid #edf2f7;
+    }
+    .report-table th:first-child, .report-table td:first-child {
+        text-align: left;
+        font-weight: 600;
+        position: sticky;
+        left: 0;
+        background: white;
+        z-index: 1;
+    }
+    .report-table th {
+        background-color: #f7fafc;
+        color: #4a5568;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    .report-table tr:hover {
+        background-color: #f8fafc;
+    }
+    .value-cell {
+        font-family: 'Inter', sans-serif;
+        font-variant-numeric: tabular-nums;
+    }
+    .empty-value {
+        color: #cbd5e0;
+    }
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="report-section">
+    <div class="report-container">
+        <div class="report-header">
+            <div class="report-title">
+                <h2>📈 Monthly KPI Report</h2>
+                <p>Pivoted monthly performance data</p>
+            </div>
+            <div class="year-filter">
+                <label for="year-select">Year:</label>
+                <select id="year-select" class="year-select" onchange="loadReport()">
+                    <option value="2025" selected>2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadReport()">Refresh</button>
+            </div>
+        </div>
+
+        <div id="report-wrapper" style="position: relative; min-height: 200px;">
+            <div id="report-loading" class="loading-overlay" style="display: none;">
+                <div class="loading-spinner"></div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>KPI ID</th>
+                            <th>JAN</th>
+                            <th>FEB</th>
+                            <th>MAR</th>
+                            <th>APR</th>
+                            <th>MAY</th>
+                            <th>JUN</th>
+                            <th>JUL</th>
+                            <th>AUG</th>
+                            <th>SEP</th>
+                            <th>OCT</th>
+                            <th>NOV</th>
+                            <th>DEC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-tbody">
+                        <tr>
+                            <td colspan="13" style="text-align: center; padding: 3rem;">
+                                Loading report data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    async function loadReport() {
+        const year = document.getElementById('year-select').value;
+        const tbody = document.getElementById('report-tbody');
+        const loader = document.getElementById('report-loading');
+
+        loader.style.display = 'flex';
+
+        try {
+            const response = await fetch(`/api/report?year=${year}`);
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                renderTable(result.data);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: red;">Error: ${result.message}</td></tr>`;
+            }
+        } catch (error) {
+            console.error('Error loading report:', error);
+            tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: red;">Error connecting to server</td></tr>`;
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('report-tbody');
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="13" style="text-align: center;">No data found for this year.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map(row => {
+            return `
+                <tr>
+                    <td><strong>${row.kpi_id}</strong></td>
+                    ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
+                        const val = row[`m${m}`];
+                        return `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
+                    }).join('')}
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function formatNumber(num) {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(num);
+    }
+
+    // Load initial report
+    document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+{% endblock %}

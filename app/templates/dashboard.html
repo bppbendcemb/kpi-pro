@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - KPI Pro{% endblock %}
+
+{% block content %}
+<section class="dashboard-section">
+    <div class="section-header">
+        <h2>📊 KPI Dashboard</h2>
+        <p class="description">View and analyze synchronized KPI data</p>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="dashboard-grid">
+            <!-- Statistics Cards -->
+            <div class="stat-card">
+                <div class="stat-icon" style="background-color: #3498db;">📊</div>
+                <div class="stat-content">
+                    <h4>Total KPIs</h4>
+                    <p class="stat-value" id="total-kpis">Loading...</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background-color: #2ecc71;">✓</div>
+                <div class="stat-content">
+                    <h4>Active Records</h4>
+                    <p class="stat-value" id="active-records">Loading...</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background-color: #e74c3c;">⚠️</div>
+                <div class="stat-content">
+                    <h4>Last Sync</h4>
+                    <p class="stat-value" id="last-sync">Never</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background-color: #f39c12;">🎯</div>
+                <div class="stat-content">
+                    <h4>Departments</h4>
+                    <p class="stat-value" id="total-departments">19</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3>📈 KPI Distribution by Month</h3>
+                <div class="chart-placeholder">
+                    <p>Chart visualization will appear here once data is synced</p>
+                    <p class="chart-note">Data from PostgreSQL kpi_data table</p>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>🎯 Target vs Actual</h3>
+                <div class="chart-placeholder">
+                    <p>Comparison chart will appear here</p>
+                    <p class="chart-note">Data from PostgreSQL goals table</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-section">
+            <div class="table-header">
+                <h3>📋 Recent KPI Data</h3>
+                <div class="table-controls">
+                    <input type="text" id="search-input" class="search-box" placeholder="Search KPI...">
+                    <select id="filter-department" class="filter-select">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>KPI ID</th>
+                            <th>Name</th>
+                            <th>Year</th>
+                            <th>Month</th>
+                            <th>Value</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-tbody">
+                        <tr class="empty-row">
+                            <td colspan="7" class="text-center">No data available. Please sync data first.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-pagination">
+                <button class="btn btn-small">← Previous</button>
+                <span id="current-page">Page 1</span>
+                <button class="btn btn-small">Next →</button>
+            </div>
+        </div>
+
+        <!-- Sync Status Log -->
+        <div class="log-section">
+            <h3>🔄 Sync Activity Log</h3>
+            <div class="log-container" id="sync-log">
+                <div class="log-entry">
+                    <span class="log-time">--:--:--</span>
+                    <span class="log-message">System initialized. Ready for synchronization.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-placeholder {
+        height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 6px;
+        color: #7f8c8d;
+    }
+
+    .chart-note {
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        color: #95a5a6;
+    }
+</style>
+
+{% endblock %}
