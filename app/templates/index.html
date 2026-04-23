@@ -10,45 +10,59 @@
     </div>
 
     <div class="sync-container">
+
+
         <div class="sync-card">
-            <h3>Data Sync Status</h3>
+            <h3>📅 Monthly KPI Report Sync</h3>
             
             <div class="status-info">
                 <div class="status-item">
-                    <span class="label">Source Database:</span>
-                    <span class="value">SQL Server</span>
+                    <span class="label">Source:</span>
+                    <span class="value">sp_GetMonthlyKPIReport</span>
                 </div>
                 <div class="status-item">
-                    <span class="label">Destination Database:</span>
-                    <span class="value">PostgreSQL</span>
+                    <span class="label">Destination:</span>
+                    <span class="value">monthly_kpi_report</span>
                 </div>
                 <div class="status-item">
                     <span class="label">Last Status:</span>
-                    <span id="last-status" class="value status-idle">Ready</span>
+                    <span id="monthly-sync-status" class="value status-idle">Ready</span>
                 </div>
             </div>
 
             <div class="sync-controls">
-                <button id="sync-btn" class="btn btn-primary" onclick="triggerSync()">
-                    <span class="btn-icon">🔄</span>
-                    <span class="btn-text">Start Sync</span>
-                </button>
-                <button id="reset-btn" class="btn btn-secondary" onclick="resetStatus()" style="display: none;">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <label for="year-input" style="font-weight: 600;">Year:</label>
+                    <input 
+                        type="number" 
+                        id="year-input" 
+                        min="2018" 
+                        max="2099" 
+                        value="2026" 
+                        style="padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; width: 100px;"
+                    >
+                    <button id="monthly-sync-btn" class="btn btn-primary" onclick="triggerMonthlySyncWithYear()">
+                        <span class="btn-icon">📊</span>
+                        <span class="btn-text">Sync Monthly KPI</span>
+                    </button>
+                </div>
+                <button id="monthly-reset-btn" class="btn btn-secondary" onclick="resetMonthlySyncStatus()" style="display: none; margin-top: 1rem;">
                     <span class="btn-icon">↻</span>
                     <span class="btn-text">Reset</span>
                 </button>
             </div>
 
-            <div id="status-message" class="status-message" style="display: none;"></div>
-            <div id="loading-spinner" class="loading-spinner" style="display: none;"></div>
+            <div id="monthly-status-message" class="status-message" style="display: none;"></div>
+            <div id="monthly-loading-spinner" class="loading-spinner" style="display: none;"></div>
 
-            <div id="result-section" class="result-section" style="display: none;">
+            <div id="monthly-result-section" class="result-section" style="display: none;">
                 <div class="result-header">
                     <h4>📋 Sync Result</h4>
                 </div>
                 <div class="result-content">
-                    <p id="rows-synced">Rows synced: <strong id="row-count">0</strong></p>
-                    <p id="sync-time">Sync completed at: <strong id="sync-timestamp">--</strong></p>
+                    <p>Year: <strong id="monthly-sync-year">--</strong></p>
+                    <p>Rows synced: <strong id="monthly-row-count">0</strong></p>
+                    <p>Sync completed at: <strong id="monthly-sync-timestamp">--</strong></p>
                 </div>
             </div>
         </div>
@@ -57,15 +71,15 @@
             <h3>ℹ️ Information</h3>
             <ul class="info-list">
                 <li>
-                    <strong>Source:</strong> Reads from SQL Server table
-                    <code>Source_Table</code>
+                    <strong>Source:</strong> Executes MSSQL Stored Procedure
+                    <code>sp_GetMonthlyKPIReport</code>
                 </li>
                 <li>
-                    <strong>Destination:</strong> Writes to PostgreSQL table
-                    <code>kpi_data</code>
+                    <strong>Destination:</strong> Upserts to PostgreSQL table
+                    <code>public.data</code>
                 </li>
                 <li>
-                    <strong>Operation:</strong> Replace entire table with fresh data
+                    <strong>Operation:</strong> Upsert (Update if exists, Insert if new) based on KPI ID, Year, and Month
                 </li>
                 <li>
                     <strong>Format:</strong> Automatic data type conversion

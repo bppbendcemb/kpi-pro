@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <nav class="navbar">
         <div class="navbar-container">
@@ -15,10 +17,19 @@
                 <span class="subtitle">Key Performance Indicator Sync System</span>
             </div>
             <ul class="navbar-menu">
-                <li><a href="/" class="nav-link">Home</a></li>
+                <li class="dropdown">
+                    <a href="javascript:void(0)" class="nav-link dropbtn">
+                        Quick Menu <i style="font-size: 0.7rem; margin-left: 5px;">▼</i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="/">🏠 Home</a>
+                        <a href="/#sync-section">🔄 Sync Data</a>
+                        <a href="/#info-section">ℹ️ Information</a>
+                    </div>
+                </li>
+
                 <li><a href="/report" class="nav-link">Monthly Report</a></li>
-                <li><a href="/#sync-section" class="nav-link">Sync Data</a></li>
-                <li><a href="/#info-section" class="nav-link">Information</a></li>
+                <li><a href="/add" class="nav-link">Add Data</a></li>
             </ul>
         </div>
     </nav>
@@ -37,4 +48,5 @@
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

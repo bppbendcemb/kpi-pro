@@ -193,3 +193,144 @@ def validate_connection() -> Tuple[bool, str]:
         return False, f"✗ PostgreSQL connection failed: {str(e)}"
     
     return True, "All connections validated successfully"
+
+
+def sync_monthly_kpi_report(year: int = 2025) -> Tuple[int, Optional[str]]:
+    """
+    Execute MSSQL stored procedure sp_GetMonthlyKPIReport and save results to PostgreSQL
+    ดึงข้อมูลรายเดือน KPI จาก MSSQL มาบันทึกลง PostgreSQL
+    
+    Args:
+        year: The year to retrieve KPI data for (default: 2025)
+    
+    Returns:
+        Tuple[int, Optional[str]]: (rows synced, error message or None)
+    """
+    engine_pg = None
+    conn_ms = None
+    cursor = None
+    
+    try:
+        logger.info("=" * 60)
+        logger.info(f"Starting Monthly KPI Report Sync (Year: {year})")
+        
+        # Step 1: Connect to MSSQL
+        try:
+            db = os.getenv('MSSQL_DB_IT')
+            conn_ms = get_mssql_conn(database=db)
+            logger.info(f"✓ Connected to MSSQL Server [{db}]")
+        except Exception as e:
+            error_msg = f"MSSQL connection failed: {str(e)}"
+            logger.error(error_msg)
+            return 0, error_msg
+        
+        # Step 2: Execute stored procedure
+        try:
+            # Create cursor and execute stored procedure
+            cursor = conn_ms.cursor()
+            logger.info(f"Executing: EXEC [dbo].[sp_GetMonthlyKPIReport] @yr = {year}")
+            cursor.execute(f"EXEC [dbo].[sp_GetMonthlyKPIReport] @yr = {year}")
+            
+            # Fetch all results
+            columns = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+            
+            if not rows:
+                logger.warning(f"No data returned from stored procedure for year {year}")
+                return 0, None
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(rows, columns=columns)
+            logger.info(f"✓ Retrieved {len(df)} rows from stored procedure")
+            
+            # Step 2.1: Filter columns to match PostgreSQL table schema
+            # Required columns: kpi_id, year, month, value
+            expected_columns = ['kpi_id', 'year', 'month', 'value']
+            # Only keep columns that exist in the result and are expected in PG
+            df = df[[col for col in expected_columns if col in df.columns]]
+            
+            # Step 2.2: Force numeric types to match PostgreSQL schema
+            for col in ['kpi_id', 'year', 'month', 'value']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            
+            logger.info(f"✓ Filtered and type-cast DataFrame columns: {df.columns.tolist()}")
+
+
+            
+        except Exception as e:
+            error_msg = f"Failed to execute stored procedure: {str(e)}"
+            logger.error(error_msg)
+            return 0, error_msg
+        finally:
+            if cursor:
+                cursor.close()
+        
+        # Step 3: Connect to PostgreSQL and save data
+        try:
+            engine_pg = get_pg_engine()
+            logger.info("✓ Connected to PostgreSQL")
+        except Exception as e:
+            error_msg = f"PostgreSQL connection failed: {str(e)}"
+            logger.error(error_msg)
+            return 0, error_msg
+        
+        # Step 4: Save to public.data table with Upsert logic
+        try:
+            # We use a temporary table to perform the upsert (Insert or Update if exists)
+            temp_table = f"temp_sync_{year}"
+            
+            with engine_pg.connect() as conn:
+                # 1. Save DataFrame to temporary table
+                df.to_sql(
+                    temp_table,
+                    engine_pg,
+                    if_exists='replace',
+                    index=False,
+                    chunksize=BATCH_SIZE,
+                    method='multi'
+                )
+                
+                # 2. Perform the Upsert from temp table to main table
+                # Based on kpi_id, year, month
+                upsert_query = text(f"""
+                    INSERT INTO public.data (kpi_id, year, month, value)
+                    SELECT kpi_id, year, month, value FROM {temp_table}
+                    ON CONFLICT (kpi_id, year, month) 
+                    DO UPDATE SET 
+                        value = EXCLUDED.value
+                """)
+                
+                result = conn.execute(upsert_query)
+                conn.execute(text(f"DROP TABLE IF EXISTS {temp_table}"))
+                conn.commit()
+                
+            rows_synced = len(df)
+            logger.info(f"✓ Successfully upserted {rows_synced} rows to public.data")
+            logger.info("=" * 60)
+            
+            return rows_synced, None
+
+            
+        except Exception as e:
+            error_msg = f"Failed to save data to PostgreSQL: {str(e)}"
+            logger.error(error_msg)
+            return 0, error_msg
+        
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return 0, error_msg
+    
+    finally:
+        # Cleanup connections
+        if conn_ms:
+            try:
+                conn_ms.close()
+            except Exception:
+                pass
+        if engine_pg:
+            try:
+                engine_pg.dispose()
+            except Exception:
+                pass

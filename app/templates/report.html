@@ -7,61 +7,42 @@
     .report-section {
         padding: 2rem 0;
     }
+
     .report-container {
         background: white;
         padding: 2rem;
         border-radius: 12px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
-    .report-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        border-bottom: 2px solid #f0f2f5;
-        padding-bottom: 1rem;
-    }
-    .report-title h2 {
-        margin: 0;
-        color: #1a202c;
-        font-size: 1.75rem;
-    }
-    .report-title p {
-        margin: 0.5rem 0 0 0;
-        color: #718096;
-    }
-    .year-filter {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-    .year-select {
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        border: 1px solid #e2e8f0;
-        font-size: 1rem;
-    }
+
+    /* ตารางแบบ Responsive */
     .table-responsive {
         overflow-x: auto;
+        position: relative;
+        border-radius: 8px;
+        border: 1px solid #edf2f7;
     }
+
     .report-table {
         width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
+        border-collapse: separate;
+        /* สำคัญ: เพื่อให้ Sticky ทำงานร่วมกับ Border ได้ดี */
+        border-spacing: 0;
+        margin-top: 0;
     }
-    .report-table th, .report-table td {
+
+    /* ตั้งค่า TH และ TD พื้นฐาน */
+    .report-table th,
+    .report-table td {
         padding: 12px 15px;
         text-align: right;
+        /* ตัวเลขชิดขวา */
         border-bottom: 1px solid #edf2f7;
+        border-right: 1px solid #f7fafc;
+        white-space: nowrap;
     }
-    .report-table th:first-child, .report-table td:first-child {
-        text-align: left;
-        font-weight: 600;
-        position: sticky;
-        left: 0;
-        background: white;
-        z-index: 1;
-    }
+
+    /* หัวตาราง */
     .report-table th {
         background-color: #f7fafc;
         color: #4a5568;
@@ -69,28 +50,90 @@
         text-transform: uppercase;
         font-size: 0.75rem;
         letter-spacing: 0.05em;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        /* ให้หัวตารางอยู่บนสุด */
     }
-    .report-table tr:hover {
+
+    /* --- ระบบล็อกคอลัมน์ (Sticky Columns) --- */
+
+    /* คอลัมน์ที่ 1: KPI ID */
+    .report-table th:nth-child(1),
+    .report-table td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        background-color: white;
+        text-align: left;
+        font-weight: 600;
+        min-width: 80px;
+    }
+
+    /* คอลัมน์ที่ 2: Activities (ชื่อกิจกรรม) */
+    .report-table th:nth-child(2),
+    .report-table td:nth-child(2) {
+        position: sticky;
+        left: 80px;
+        /* ต้องระบุระยะจากซ้ายให้พอดีกับความกว้างคอลัมน์แรก */
+        z-index: 5;
+        background-color: white;
+        text-align: left;
+        white-space: normal;
+        /* ตัดบรรทัดได้ */
+        min-width: 250px;
+        max-width: 350px;
+        border-right: 2px solid #edf2f7;
+        /* เพิ่มเส้นแบ่งให้ดูชัดเจน */
+    }
+
+    /* แก้ไขพื้นหลังเมื่อ Hover และสีหัวตารางที่เป็น Sticky */
+    .report-table th:nth-child(1),
+    .report-table th:nth-child(2) {
+        background-color: #f7fafc;
+        z-index: 11;
+        /* หัวตารางที่ล็อกต้องอยู่สูงกว่าเนื้อหาที่ล็อก */
+    }
+
+    .report-table tr:hover td {
         background-color: #f8fafc;
+        /* เมื่อ Hover ให้เปลี่ยนสีพื้นหลังทั้งหมด */
     }
+
+    .report-table tr:hover td:nth-child(1),
+    .report-table tr:hover td:nth-child(2) {
+        background-color: #f1f5f9;
+        /* คอลัมน์ที่ล็อกก็ต้องเปลี่ยนสีด้วย */
+    }
+
+    /* คอลัมน์อื่นๆ (Unit, Target) */
+    .report-table td:nth-child(3),
+    .report-table td:nth-child(4) {
+        text-align: center;
+    }
+
+    /* --- ตกแต่งส่วนอื่นๆ --- */
     .value-cell {
         font-family: 'Inter', sans-serif;
         font-variant-numeric: tabular-nums;
+        color: #2d3748;
     }
+
     .empty-value {
         color: #cbd5e0;
     }
+
     .loading-overlay {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.8);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 10;
+        z-index: 100;
     }
 </style>
 {% endblock %}
@@ -105,11 +148,7 @@
             </div>
             <div class="year-filter">
                 <label for="year-select">Year:</label>
-                <select id="year-select" class="year-select" onchange="loadReport()">
-                    <option value="2025" selected>2025</option>
-                    <option value="2024">2024</option>
-                    <option value="2023">2023</option>
-                </select>
+                <select id="year-select" class="year-select" onchange="loadReport()"></select>
                 <button class="btn btn-primary" onclick="loadReport()">Refresh</button>
             </div>
         </div>
@@ -118,12 +157,15 @@
             <div id="report-loading" class="loading-overlay" style="display: none;">
                 <div class="loading-spinner"></div>
             </div>
-            
+
             <div class="table-responsive">
                 <table class="report-table">
                     <thead>
                         <tr>
                             <th>KPI ID</th>
+                            <th style="min-width: 200px;">Activity</th>
+                            <th>Unit</th>
+                            <th>Target</th>
                             <th>JAN</th>
                             <th>FEB</th>
                             <th>MAR</th>
@@ -140,7 +182,7 @@
                     </thead>
                     <tbody id="report-tbody">
                         <tr>
-                            <td colspan="13" style="text-align: center; padding: 3rem;">
+                            <td colspan="17" style="text-align: center; padding: 3rem;">
                                 Loading report data...
                             </td>
                         </tr>
@@ -152,6 +194,8 @@
 </section>
 
 <script>
+    const SERVER_CURRENT_YEAR = {{ current_year }};
+
     async function loadReport() {
         const year = document.getElementById('year-select').value;
         const tbody = document.getElementById('report-tbody');
@@ -166,34 +210,66 @@
             if (result.status === 'success') {
                 renderTable(result.data);
             } else {
-                tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: red;">Error: ${result.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="17" style="text-align: center; color: red;">Error: ${result.message}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading report:', error);
-            tbody.innerHTML = `<tr><td colspan="13" style="text-align: center; color: red;">Error connecting to server</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="17" style="text-align: center; color: red;">Error connecting to server</td></tr>`;
         } finally {
             loader.style.display = 'none';
         }
     }
 
+    // function renderTable(data) {
+    //     const tbody = document.getElementById('report-tbody');
+
+    //     if (data.length === 0) {
+    //         tbody.innerHTML = `<tr><td colspan="13" style="text-align: center;">No data found for this year.</td></tr>`;
+    //         return;
+    //     }
+
+    //     tbody.innerHTML = data.map(row => {
+    //         return `
+    //             <tr>
+    //                 <td><strong>${row.kpi_id}</strong></td>
+    //                 ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
+    //                     const val = row[`m${m}`];
+    //                     return `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
+    //                 }).join('')}
+    //             </tr>
+    //         `;
+    //     }).join('');
+    // }
+
     function renderTable(data) {
         const tbody = document.getElementById('report-tbody');
-        
+
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="13" style="text-align: center;">No data found for this year.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="17" style="text-align: center;">No data found.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = data.map(row => {
+            // ตรวจสอบค่า Target (istarget) เพื่อความสวยงาม
+            const targetIcon = row.istarget ? '🎯 ' : '';
+
             return `
-                <tr>
-                    <td><strong>${row.kpi_id}</strong></td>
-                    ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
-                        const val = row[`m${m}`];
-                        return `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
-                    }).join('')}
-                </tr>
-            `;
+            <tr>
+                <td><strong>${row.kpi_id}</strong></td>
+                <td style="text-align: left; font-size: 0.9rem;">
+                    ${row.activities || '<span class="empty-value">No Title</span>'}
+                </td>
+                <td style="text-align: center;">${row.unit || '-'}</td>
+                <td style="text-align: center; font-weight: bold; color: #2c5282;">
+                    ${targetIcon}${row.source_result || '-'}
+                </td>
+
+                ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
+                const val = row[`m${m}`];
+                return `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
+            }).join('')}
+            </tr>
+        `;
         }).join('');
     }
 
@@ -204,7 +280,26 @@
         }).format(num);
     }
 
+    function populateYears() {
+        const currentYear = SERVER_CURRENT_YEAR;
+        const startYear = 2018;
+        const yearSelect = document.getElementById('year-select');
+
+        for (let year = currentYear; year >= startYear; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            if (year === currentYear) {
+                option.selected = true;
+            }
+            yearSelect.appendChild(option);
+        }
+    }
+
     // Load initial report
-    document.addEventListener('DOMContentLoaded', loadReport);
+    document.addEventListener('DOMContentLoaded', function () {
+        populateYears();
+        loadReport();
+    });
 </script>
 {% endblock %}

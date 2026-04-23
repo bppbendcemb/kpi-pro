@@ -112,6 +112,129 @@ function resetStatus() {
     resetBtn.style.display = 'none';
 }
 
+/**
+ * Trigger monthly KPI report synchronization with year
+ */
+async function triggerMonthlySyncWithYear() {
+    const yearInput = document.getElementById('year-input');
+    const year = parseInt(yearInput.value) || 2026;
+    
+    const syncBtn = document.getElementById('monthly-sync-btn');
+    const resetBtn = document.getElementById('monthly-reset-btn');
+    const statusMsg = document.getElementById('monthly-status-message');
+    const spinner = document.getElementById('monthly-loading-spinner');
+    const resultSection = document.getElementById('monthly-result-section');
+    const lastStatus = document.getElementById('monthly-sync-status');
+
+    // Validate year
+    if (year < 2018 || year > 2099) {
+        showMonthlySyncErrorMessage('Invalid year. Please enter a year between 2018 and 2099.');
+        return;
+    }
+
+    // Disable button and show loading spinner
+    syncBtn.disabled = true;
+    spinner.style.display = 'block';
+    statusMsg.style.display = 'none';
+    resultSection.style.display = 'none';
+
+    // Update status
+    lastStatus.textContent = 'Syncing...';
+    lastStatus.className = 'value status-loading';
+
+    try {
+        // Send monthly sync request to backend with year
+        const response = await fetch('/api/sync/monthly-kpi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ year: year })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.status === 'success') {
+            // Success
+            showMonthlySyncSuccessMessage(
+                `✓ Monthly KPI sync completed successfully! ${data.rows} rows synced for year ${year}.`,
+                data.rows,
+                year
+            );
+            lastStatus.textContent = 'Success';
+            lastStatus.className = 'value status-success';
+            logActivity(`✓ Monthly KPI sync completed for year ${year}: ${data.rows} rows synchronized`);
+        } else {
+            // Error from backend
+            showMonthlySyncErrorMessage(`✗ Sync failed: ${data.error || 'Unknown error'}`);
+            lastStatus.textContent = 'Failed';
+            lastStatus.className = 'value status-error';
+            logActivity(`✗ Monthly KPI sync failed for year ${year}: ${data.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        // Network or other error
+        showMonthlySyncErrorMessage(`✗ Error connecting to server: ${error.message}`);
+        lastStatus.textContent = 'Error';
+        lastStatus.className = 'value status-error';
+        logActivity(`✗ Monthly KPI sync connection error: ${error.message}`);
+        console.error('Monthly sync error:', error);
+    } finally {
+        // Re-enable button and hide spinner
+        syncBtn.disabled = false;
+        spinner.style.display = 'none';
+        resetBtn.style.display = 'inline-flex';
+    }
+}
+
+/**
+ * Show success message for monthly sync
+ */
+function showMonthlySyncSuccessMessage(message, rowCount, year) {
+    const statusMsg = document.getElementById('monthly-status-message');
+    const resultSection = document.getElementById('monthly-result-section');
+    const rowCountEl = document.getElementById('monthly-row-count');
+    const yearEl = document.getElementById('monthly-sync-year');
+    const syncTime = document.getElementById('monthly-sync-timestamp');
+
+    statusMsg.textContent = message;
+    statusMsg.className = 'status-message success';
+    statusMsg.style.display = 'block';
+
+    // Show result section
+    yearEl.textContent = year;
+    rowCountEl.textContent = rowCount;
+    syncTime.textContent = new Date().toLocaleString();
+    resultSection.style.display = 'block';
+}
+
+/**
+ * Show error message for monthly sync
+ */
+function showMonthlySyncErrorMessage(message) {
+    const statusMsg = document.getElementById('monthly-status-message');
+    statusMsg.textContent = message;
+    statusMsg.className = 'status-message error';
+    statusMsg.style.display = 'block';
+}
+
+/**
+ * Reset the monthly sync status
+ */
+function resetMonthlySyncStatus() {
+    const syncBtn = document.getElementById('monthly-sync-btn');
+    const resetBtn = document.getElementById('monthly-reset-btn');
+    const statusMsg = document.getElementById('monthly-status-message');
+    const resultSection = document.getElementById('monthly-result-section');
+    const lastStatus = document.getElementById('monthly-sync-status');
+
+    statusMsg.style.display = 'none';
+    resultSection.style.display = 'none';
+    lastStatus.textContent = 'Ready';
+    lastStatus.className = 'value status-idle';
+    syncBtn.style.display = 'inline-flex';
+    resetBtn.style.display = 'none';
+}
+
 // ==================== Activity Logging ====================
 
 /**

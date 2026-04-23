@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Add KPI Data - KPI Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .add-container {
+        /* max-width: 1200px; */
+        width: 100%;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .selection-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .kpi-list {
+        max-height: 700px;
+        overflow-y: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 1rem;
+        background: #f8fafc;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .kpi-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+    }
+
+    .kpi-control {
+        width: 80%;
+        padding: 0.6rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+
+    .kpi-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .form-actions {
+        margin-top: 3rem;
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+    }
+
+    .btn-submit {
+        padding: 1rem 3rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 10px;
+    }
+
+    h1 {
+        margin-bottom: 1.5rem;
+        color: #1e293b;
+        font-weight: 800;
+        text-align: center;
+    }
+
+
+    /* month button */
+
+    .selection-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    /* ปรับส่วนเลือกปีให้เล็กลงและเรียงสวยงาม */
+    .year-section {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        /* ระยะห่างระหว่าง Label กับ Select */
+    }
+
+    /* ปรับขนาดกล่องเลือกปี (Select) */
+    .year-section .kpi-control {
+        width: auto;
+        /* เปลี่ยนจาก 100% เป็น auto */
+        min-width: 120px;
+        /* กำหนดความกว้างขั้นต่ำที่พอดีกับตัวเลขปี */
+        padding: 0.4rem 0.8rem;
+        /* ลด padding ลงเล็กน้อย */
+        cursor: pointer;
+    }
+
+    /* ปรับ Label ของปีให้ไม่ต้องมี margin ล่างเยอะ */
+    .year-section .kpi-label {
+        margin-bottom: 0;
+        /* ให้ Label ขนานไปกับกล่อง Select */
+        white-space: nowrap;
+        /* ป้องกัน Label ตกบรรทัด */
+    }
+
+    .month-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        /* เรียง 6 ปุ่มต่อแถว (รวมเป็น 2 แถว) */
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .month-btn {
+        padding: 15px 5px;
+        border: 2px solid #e0e0e0;
+        background-color: #ffffff;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: all 0.2s ease;
+        color: #666;
+    }
+
+    /* เมื่อเอาเมาส์ไปวาง */
+    .month-btn:hover {
+        border-color: #007bff;
+        background-color: #f0f7ff;
+    }
+
+    /* เมื่อปุ่มถูกเลือก (สถานะค้าง) */
+    .month-btn.active {
+        background-color: #007bff !important;
+        /* สีน้ำเงิน */
+        color: white !important;
+        /* ตัวอักษรขาว */
+        border-color: #0056b3 !important;
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        transform: translateY(-2px);
+        /* ยกปุ่มขึ้นเล็กน้อย */
+    }
+
+    @media (max-width: 600px) {
+        .month-grid {
+            grid-template-columns: repeat(3, 1fr);
+            /* บนมือถือแสดงแถวละ 3 ปุ่ม */
+        }
+    }
+
+    .kpi-label {
+        font-weight: bold;
+        color: #333;
+        display: block;
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="add-container">
+    <h1>📝 Add/Update KPI Data</h1>
+
+    <form id="multi-add-form" class="form-card">
+        <div class="selection-card">
+            <div style="display: flex; align-items: center; justify-content:间-between; flex-wrap: wrap; gap: 20px;">
+
+                <div class="year-section" style="margin-bottom: 0;">
+                    <label class="kpi-label" for="year">ปี (Year):</label>
+                    <select name="year" id="year" class="kpi-control" onchange="updateData()">
+                        {% for y in range(year, year - 10, -1) %}
+                        <option value="{{ y }}" {% if y==year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="selected-info">
+                    <span class="badge bg-primary" id="current_selection_display"
+                        style="font-size: 1.1rem; padding: 12px 20px; border-radius: 8px;">
+                        กำลังบันทึกข้อมูลเดือน:
+                        <strong id="display_val" style="font-size: 1.4rem; margin-left: 5px;">
+                            {{ selected_month }} / {{ year }}
+                        </strong>
+                    </span>
+                </div>
+            </div>
+            <br>
+            <hr>
+
+            <div class="month-section">
+                <label class="kpi-label">คลิกเลือกเดือน (Month):</label>
+                <div class="month-grid" id="monthGrid">
+                    {% set months = [
+                    ('1', 'ม.ค.'), ('2', 'ก.พ.'), ('3', 'มี.ค.'), ('4', 'เม.ย.'),
+                    ('5', 'พ.ค.'), ('6', 'มิ.ย.'), ('7', 'ก.ค.'), ('8', 'ส.ค.'),
+                    ('9', 'ก.ย.'), ('10', 'ต.ค.'), ('11', 'พ.ย.'), ('12', 'ธ.ค.')
+                    ] %}
+
+                    {% for val, name in months %}
+                    <button type="button" class="month-btn {% if selected_month == val %}active{% endif %}"
+                        data-value="{{ val }}" onclick="handleMonthClick(this)">
+                        {{ name }}
+                    </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="month" id="month_input" value="{{ selected_month }}">
+            </div>
+        </div>
+
+        <div class="kpi-list">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 150px;">KPI ID</th>
+                        <th>Value</th>
+                        <th style="width: 100px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kpi_id in kpi_ids %}
+                    <tr>
+                        <td class="align-middle">
+                            <span class="fw-bold">KPI ID: {{ kpi_id }}</span>
+                        </td>
+                        <td>
+                            <input type="number" step="0.01" name="kpi_{{ kpi_id }}" id="kpi_{{ kpi_id }}"
+                                class="form-control kpi-value-input" placeholder="Enter value">
+                        </td>
+                        <td class="text-center align-middle">
+                            <a href="/report?kpi_id={{ kpi_id }}" class="btn btn-sm btn-outline-info" target="_blank"
+                                title="View Report">
+                             View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">Cancel</button>
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-submit">
+                Save All KPI Data
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ฟังก์ชันหลักสำหรับอัปเดตหน้าจอเมื่อมีการเปลี่ยนแปลง
+    function refreshUI() {
+        const yearValue = document.getElementById('year').value;
+        const monthInput = document.getElementById('month_input');
+        const monthValue = monthInput.value;
+
+        // หาชื่อเดือนจากปุ่มที่ 'active'
+        const activeBtn = document.querySelector('.month-btn.active');
+        const monthName = activeBtn ? activeBtn.innerText : monthValue;
+
+        // อัปเดตข้อความใน Badge โดยยังคงโครงสร้าง HTML ไว้
+        const displayBadge = document.getElementById('current_selection_display');
+        if (displayBadge) {
+            // เขียน HTML ทับลงไปเพื่อให้คงแท็ก <strong> ไว้
+            displayBadge.innerHTML = `กำลังบันทึกข้อมูลเดือน: <strong style="font-size: 1.4rem; margin-left: 5px;">${monthName} / ${yearValue}</strong>`;
+        }
+
+        fetchExistingData();
+    }
+
+    // ฟังก์ชันเมื่อคลิกปุ่มเดือน
+    function handleMonthClick(element) {
+        // อัปเดตค่าใน Hidden Input
+        document.getElementById('month_input').value = element.getAttribute('data-value');
+
+        // เปลี่ยนสีปุ่ม
+        document.querySelectorAll('.month-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+
+        // รันการอัปเดตหน้าจอ
+        refreshUI();
+    }
+
+    // ฟังก์ชันเมื่อเปลี่ยนปีใน Dropdown (onchange="updateData()")
+    function updateData() {
+        refreshUI();
+    }
+
+    // ฟังก์ชัน AJAX ดึงข้อมูล
+    async function fetchExistingData() {
+        const year = document.getElementById('year').value;
+        const month = document.getElementById('month_input').value;
+
+        if (!year || !month) return;
+
+        try {
+            const response = await fetch(`/api/data/get-monthly?year=${year}&month=${month}`);
+            const result = await response.json();
+
+            // ล้างค่าเก่าในช่อง Input
+            document.querySelectorAll('.kpi-value-input').forEach(input => input.value = '');
+
+            // ใส่ค่าใหม่ถ้ามีข้อมูล
+            if (result.success && result.data) {
+                result.data.forEach(item => {
+                    const input = document.getElementById(`kpi_${item.kpi_id}`);
+                    if (input) input.value = item.value;
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    }
+
+    // สั่งให้ทำงานครั้งแรกตอนโหลดหน้าเสร็จ
+    document.addEventListener('DOMContentLoaded', function () {
+        refreshUI();
+    });
+</script>
+{% endblock %}
