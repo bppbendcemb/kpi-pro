@@ -36,7 +36,7 @@ def dashboard():
 
 
 @data_bp.route("/report")
-def report():
+def show_report():
     """
     Render the report page
     """
@@ -57,7 +57,7 @@ def get_report_data():
 
     query = text(
         f"""
-        SELECT 
+          SELECT 
     dt.kpi_id, 
     MAX(CASE WHEN dt.month = 1 THEN dt.value END) AS m1,
     MAX(CASE WHEN dt.month = 2 THEN dt.value END) AS m2,
@@ -82,9 +82,15 @@ def get_report_data():
     act."linkUrl", 
     act.unit, 
     act.source_result, 
-    act.istarget
+    act.istarget,
+	dp.department_id, 
+	dp.department_desc,
+	grp.group_id, 
+    grp.group_desc
 FROM public.data AS dt
 LEFT JOIN public.activities AS act ON dt.kpi_id = act.kpi_id
+LEFT JOIN public.department AS dp ON act.department_id = dp.department_id
+LEFT JOIN public."group" AS grp ON act.group_id = grp.group_id
 WHERE dt.year = {year}
 GROUP BY 
     dt.kpi_id, 
@@ -99,8 +105,13 @@ GROUP BY
     act."linkUrl", 
     act.unit, 
     act.source_result, 
-    act.istarget
+    act.istarget,
+	dp.department_id, 
+	dp.department_desc,
+	grp.group_id, 
+    grp.group_desc
 ORDER BY CAST(dt.kpi_id AS INTEGER);
+
     """
     )
 
@@ -273,6 +284,50 @@ def internal_error(error):
     return jsonify({"status": "error", "error": "Internal server error"}), 500
 
 
+@data_bp.route("/api/data/get-monthly", methods=["GET"])
+def get_monthly_data():
+    """
+    Get monthly KPI data for a specific year and month
+    GET /api/data/get-monthly?year=2024&month=1
+
+    Returns:
+        JSON response with monthly data
+    """
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+
+    if not year or not month:
+        return jsonify({"success": False, "error": "Year and month are required"}), 400
+
+    query = text(
+        f"""
+        SELECT 
+            dt.kpi_id,
+            dt.value,
+            dt.year,
+            dt.month
+        FROM public.data AS dt
+        WHERE dt.year = {year} AND dt.month = {month}
+        ORDER BY dt.kpi_id
+    """
+    )
+
+    try:
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query)
+            data = [dict(row._mapping) for row in result]
+
+            return jsonify({"success": True, "data": data}), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching monthly data: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @data_bp.route("/api/data/batch-add", methods=["POST"])
 def batch_add_data():
     """
@@ -339,6 +394,153 @@ def batch_add_data():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@data_bp.route("/api/kpi/<int:kpi_id>/link", methods=["GET"])
+def get_kpi_link(kpi_id):
+    """
+    Get linkUrl for a specific KPI ID
+    GET /api/kpi/<kpi_id>/link
+
+    Returns:
+        JSON response with linkUrl
+    """
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+
+    try:
+        query = text(
+            """
+            SELECT kpi_id, "linkUrl" 
+            FROM public.activities 
+            WHERE kpi_id = :kpi_id
+            LIMIT 1
+        """
+        )
+
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query, {"kpi_id": kpi_id})
+            row = result.fetchone()
+
+            if row:
+                data = dict(row._mapping)
+                return (
+                    jsonify(
+                        {
+                            "status": "success",
+                            "kpi_id": data["kpi_id"],
+                            "linkUrl": data.get("linkUrl"),
+                        }
+                    ),
+                    200,
+                )
+            else:
+                return (
+                    jsonify({"status": "error", "message": "KPI ID not found"}),
+                    404,
+                )
+
+    except Exception as e:
+        logger.error(f"Error fetching KPI link: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@data_bp.route("/api/query2", methods=["GET"])
+def get_query2_data():
+    """
+    Get data from query2 - existing KPI data for current year with monthly values
+    GET /api/query2
+
+    Returns:
+        JSON response with query2 data
+    """
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+
+    current_year = request.args.get("year", datetime.now().year, type=int)
+
+    query2 = text(
+        f"""
+         SELECT
+    dt.kpi_id,
+    MAX(CASE WHEN dt.month = 1 THEN dt.value END) AS m1,
+    MAX(CASE WHEN dt.month = 2 THEN dt.value END) AS m2,
+    MAX(CASE WHEN dt.month = 3 THEN dt.value END) AS m3,
+    MAX(CASE WHEN dt.month = 4 THEN dt.value END) AS m4,
+    MAX(CASE WHEN dt.month = 5 THEN dt.value END) AS m5,
+    MAX(CASE WHEN dt.month = 6 THEN dt.value END) AS m6,
+    MAX(CASE WHEN dt.month = 7 THEN dt.value END) AS m7,
+    MAX(CASE WHEN dt.month = 8 THEN dt.value END) AS m8,
+    MAX(CASE WHEN dt.month = 9 THEN dt.value END) AS m9,
+    MAX(CASE WHEN dt.month = 10 THEN dt.value END) AS m10,
+    MAX(CASE WHEN dt.month = 11 THEN dt.value END) AS m11,
+    MAX(CASE WHEN dt.month = 12 THEN dt.value END) AS m12,
+    act.group_id,
+    act.department_id,
+    act."no",
+    act.sub_no,
+    act.activities,
+    act.description,
+    act.description2,
+    act."source",
+    act."linkUrl",
+    act.unit,
+    act.source_result,
+    act.istarget,
+	dp.department_id,
+	dp.department_desc,
+	grp.group_id,
+    grp.group_desc
+FROM public.data AS dt
+LEFT JOIN public.activities AS act ON dt.kpi_id = act.kpi_id
+LEFT JOIN public.department AS dp ON act.department_id = dp.department_id
+LEFT JOIN public."group" AS grp ON act.group_id = grp.group_id
+WHERE dt.year = {current_year}
+GROUP BY
+    dt.kpi_id,
+    act.group_id,
+    act.department_id,
+    act."no",
+    act.sub_no,
+    act.activities,
+    act.description,
+    act.description2,
+    act."source",
+    act."linkUrl",
+    act.unit,
+    act.source_result,
+    act.istarget,
+	dp.department_id,
+	dp.department_desc,
+	grp.group_id,
+    grp.group_desc
+ORDER BY CAST(dt.kpi_id AS INTEGER);
+    """
+    )
+
+    try:
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query2)
+            data = [dict(row._mapping) for row in result]
+
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "year": current_year,
+                        "count": len(data),
+                        "data": data,
+                        "message": f"Successfully retrieved {len(data)} KPI records with monthly data for {current_year}",
+                    }
+                ),
+                200,
+            )
+
+    except Exception as e:
+        logger.error(f"Error fetching query2 data: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
 @data_bp.route("/add", methods=["GET", "POST"])
 def add_data():
     """
@@ -396,4 +598,112 @@ def add_data():
 
     current_year = datetime.now().year
     kpi_ids = list(range(1, 89))
+
+    query = text(
+        f"""
+SELECT 
+ac.kpi_id, 
+ac.group_id, 
+ac.department_id, 
+ac.no, 
+ac.sub_no, 
+ac.activities, 
+ac.description, 
+ac.description2, 
+ac.source, 
+ac."linkUrl", 
+ac.unit, 
+ac.source_result, 
+ac.istarget,
+ac.active, 
+dp.department_desc
+FROM public.activities AS ac
+LEFT JOIN public.department AS dp ON ac.department_id = dp.department_id
+
+    """
+    )
+
+    query2 = text(
+        f"""
+         SELECT 
+    dt.kpi_id, 
+    MAX(CASE WHEN dt.month = 1 THEN dt.value END) AS m1,
+    MAX(CASE WHEN dt.month = 2 THEN dt.value END) AS m2,
+    MAX(CASE WHEN dt.month = 3 THEN dt.value END) AS m3,
+    MAX(CASE WHEN dt.month = 4 THEN dt.value END) AS m4,
+    MAX(CASE WHEN dt.month = 5 THEN dt.value END) AS m5,
+    MAX(CASE WHEN dt.month = 6 THEN dt.value END) AS m6,
+    MAX(CASE WHEN dt.month = 7 THEN dt.value END) AS m7,
+    MAX(CASE WHEN dt.month = 8 THEN dt.value END) AS m8,
+    MAX(CASE WHEN dt.month = 9 THEN dt.value END) AS m9,
+    MAX(CASE WHEN dt.month = 10 THEN dt.value END) AS m10,
+    MAX(CASE WHEN dt.month = 11 THEN dt.value END) AS m11,
+    MAX(CASE WHEN dt.month = 12 THEN dt.value END) AS m12,
+    act.group_id, 
+    act.department_id, 
+    act."no", 
+    act.sub_no, 
+    act.activities, 
+    act.description, 
+    act.description2, 
+    act."source", 
+    act."linkUrl", 
+    act.unit, 
+    act.source_result, 
+    act.istarget,
+	dp.department_id, 
+	dp.department_desc,
+	grp.group_id, 
+    grp.group_desc
+FROM public.data AS dt
+LEFT JOIN public.activities AS act ON dt.kpi_id = act.kpi_id
+LEFT JOIN public.department AS dp ON act.department_id = dp.department_id
+LEFT JOIN public."group" AS grp ON act.group_id = grp.group_id
+WHERE dt.year = {current_year}
+GROUP BY 
+    dt.kpi_id, 
+    act.group_id, 
+    act.department_id, 
+    act."no", 
+    act.sub_no, 
+    act.activities, 
+    act.description, 
+    act.description2, 
+    act."source", 
+    act."linkUrl", 
+    act.unit, 
+    act.source_result, 
+    act.istarget,
+	dp.department_id, 
+	dp.department_desc,
+	grp.group_id, 
+    grp.group_desc
+ORDER BY CAST(dt.kpi_id AS INTEGER);
+
+      
+    """
+    )
+
+    try:
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            # 1. ดึงรายชื่อ KPI ทั้งหมด (สำหรับ Dropdown หรือรายการหลัก)
+            result_all = conn.execute(query)
+            kpi_list = [dict(row._mapping) for row in result_all]
+            
+            # Use the pre-defined query2 which already includes the current_year
+            query2_dynamic = query2
+            result_existing = conn.execute(query2_dynamic)
+            existing_data = [dict(row._mapping) for row in result_existing]
+
+            return render_template(
+                "add.html", 
+                year=current_year, 
+                kpi_ids=kpi_ids, 
+                kpi_data=kpi_list,         # รายชื่อ KPI ทั้งหมด
+                existing_data=existing_data # ข้อมูลรายเดือนที่กรอกแล้ว
+            )
+    except Exception as e:
+        logger.error(f"Error fetching KPI data: {str(e)}", exc_info=True)
+
     return render_template("add.html", year=current_year, kpi_ids=kpi_ids)

@@ -13,7 +13,7 @@ from config.db_config import get_pg_engine, get_mssql_conn
 from pathlib import Path
 
 # Ensure logs directory exists
-logs_dir = Path('/app/logs')
+logs_dir = Path('logs')
 logs_dir.mkdir(exist_ok=True)
 
 # Configure logging
@@ -21,8 +21,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('/app/logs/sync_service.log'),
-        logging.StreamHandler()
+        logging.StreamHandler()  # Only use console logging to avoid permission issues
     ]
 )
 logger = logging.getLogger(__name__)

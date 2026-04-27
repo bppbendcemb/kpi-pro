@@ -70,7 +70,7 @@
         min-width: 80px;
     }
 
-    /* คอลัมน์ที่ 2: Activities (ชื่อกิจกรรม) */
+    /* คอลัมน์ที่ 2: Department */
     .report-table th:nth-child(2),
     .report-table td:nth-child(2) {
         position: sticky;
@@ -93,6 +93,15 @@
         background-color: #f7fafc;
         z-index: 11;
         /* หัวตารางที่ล็อกต้องอยู่สูงกว่าเนื้อหาที่ล็อก */
+    }
+
+    /* Group header row styling */
+    .group-header-row {
+        height: 40px;
+    }
+
+    .group-header-row td {
+        border-bottom: 2px solid #cbd5e0 !important;
     }
 
     .report-table tr:hover td {
@@ -135,21 +144,113 @@
         justify-content: center;
         z-index: 100;
     }
+
+    .filter-section {
+        background-color: #f0f4f8;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+
+    .month-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .month-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .month-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .month-checkbox label {
+        margin-bottom: 0;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .select-all-btn {
+        padding: 0.25rem 0.75rem;
+        background-color: transparent;
+        border: 1px solid #cbd5e0;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        margin-left: 0.5rem;
+    }
+
+    .select-all-btn:hover {
+        background-color: #edf2f7;
+        border-color: #a0aec0;
+    }
+
+    .select-all-btn.all-selected {
+        background-color: #c7fdf4;
+        border-color: #81e6d9;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        color: #2d3748;
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+
+    .kpi-link {
+        color: #3182ce;
+        text-decoration: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-bottom: 2px solid transparent;
+    }
+
+    .kpi-link:hover {
+        color: #2c5aa0;
+        border-bottom-color: #3182ce;
+    }
+
+    .kpi-link:active {
+        color: #1e3a8a;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <section class="report-section">
     <div class="report-container">
-        <div class="report-header">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
             <div class="report-title">
-                <h2>📈 Monthly KPI Report</h2>
-                <p>Pivoted monthly performance data</p>
+                <h2 class="mb-0">📈 Monthly KPI Report</h2>
+                <p class="mb-0 text-muted">Pivoted monthly performance data</p>
             </div>
-            <div class="year-filter">
-                <label for="year-select">Year:</label>
-                <select id="year-select" class="year-select" onchange="loadReport()"></select>
-                <button class="btn btn-primary" onclick="loadReport()">Refresh</button>
+
+            <div class="year-filter d-flex align-items-center gap-2">
+                <label for="year-select" class="mb-0 text-nowrap">Year:</label>
+                <select id="year-select" class="form-select" style="width: auto;" onchange="loadReport()">
+                </select>
+            </div>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="filter-section">
+            <div class="filter-label">
+                <button class="select-all-btn" id="select-all-btn" onclick="toggleAllMonths()" title="Select/Deselect All Months">✓</button>
+                📅 Select Months:
+            </div> 
+            <div class="month-selector" id="month-selector">           
             </div>
         </div>
 
@@ -163,6 +264,7 @@
                     <thead>
                         <tr>
                             <th>KPI ID</th>
+                            <th>Department</th>
                             <th style="min-width: 200px;">Activity</th>
                             <th>Unit</th>
                             <th>Target</th>
@@ -182,9 +284,7 @@
                     </thead>
                     <tbody id="report-tbody">
                         <tr>
-                            <td colspan="17" style="text-align: center; padding: 3rem;">
-                                Loading report data...
-                            </td>
+                        <td colspan="17" style="text-align: center; padding: 3rem;">Loading report data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -195,14 +295,69 @@
 
 <script>
     const SERVER_CURRENT_YEAR = {{ current_year }};
+    
+    // State management
+    let selectedMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Default: all months
+    
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+    function initializeMonthSelector() {
+        const selector = document.getElementById('month-selector');
+        selector.innerHTML = '';
+        
+        monthNames.forEach((month, index) => {
+            const monthNum = index + 1;
+            const checked = selectedMonths.includes(monthNum) ? 'checked' : '';
+            selector.innerHTML += `
+                <div class="month-checkbox">
+                    <input type="checkbox" id="month-${monthNum}" ${checked} onchange="toggleMonth(${monthNum})">
+                    <label for="month-${monthNum}">${month}</label>
+                </div>
+            `;
+        });
+        
+        updateSelectAllButton();
+    }
+
+    function updateSelectAllButton() {
+        const btn = document.getElementById('select-all-btn');
+        if (selectedMonths.length === 12) {
+            btn.classList.add('all-selected');
+        } else {
+            btn.classList.remove('all-selected');
+        }
+    }
+
+    function toggleMonth(monthNum) {
+        const checkbox = document.getElementById(`month-${monthNum}`);
+        if (checkbox.checked) {
+            if (!selectedMonths.includes(monthNum)) {
+                selectedMonths.push(monthNum);
+            }
+        } else {
+            selectedMonths = selectedMonths.filter(m => m !== monthNum);
+        }
+        selectedMonths.sort((a, b) => a - b);
+        updateSelectAllButton();
+        loadReport();
+    }
+
+    function toggleAllMonths() {
+        if (selectedMonths.length === 12) {
+            selectedMonths = [];
+        } else {
+            selectedMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        }
+        initializeMonthSelector();
+        loadReport();
+    }
 
     async function loadReport() {
         const year = document.getElementById('year-select').value;
         const tbody = document.getElementById('report-tbody');
         const loader = document.getElementById('report-loading');
 
-        loader.style.display = 'flex';
-
+        const colSpan = 5 + selectedMonths.length;
         try {
             const response = await fetch(`/api/report?year=${year}`);
             const result = await response.json();
@@ -210,52 +365,95 @@
             if (result.status === 'success') {
                 renderTable(result.data);
             } else {
-                tbody.innerHTML = `<tr><td colspan="17" style="text-align: center; color: red;">Error: ${result.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: red;">Error: ${result.message}</td></tr>`;
             }
         } catch (error) {
             console.error('Error loading report:', error);
-            tbody.innerHTML = `<tr><td colspan="17" style="text-align: center; color: red;">Error connecting to server</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: red;">Error connecting to server</td></tr>`;
         } finally {
             loader.style.display = 'none';
         }
     }
 
-    // function renderTable(data) {
-    //     const tbody = document.getElementById('report-tbody');
-
-    //     if (data.length === 0) {
-    //         tbody.innerHTML = `<tr><td colspan="13" style="text-align: center;">No data found for this year.</td></tr>`;
-    //         return;
-    //     }
-
-    //     tbody.innerHTML = data.map(row => {
-    //         return `
-    //             <tr>
-    //                 <td><strong>${row.kpi_id}</strong></td>
-    //                 ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => {
-    //                     const val = row[`m${m}`];
-    //                     return `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
-    //                 }).join('')}
-    //             </tr>
-    //         `;
-    //     }).join('');
-    // }
+    function generateTableHeaders() {
+        let headers = `
+            <tr>
+                <th>KPI ID</th>
+                <th>Department</th>
+                <th style="min-width: 200px;">Activity</th>
+                <th>Unit</th>
+                <th>Target</th>
+        `;
+        
+        selectedMonths.forEach(m => {
+            headers += `<th>${monthNames[m - 1]}</th>`;
+        });
+        
+        headers += `</tr>`;
+        return headers;
+    }
 
     function renderTable(data) {
         const tbody = document.getElementById('report-tbody');
 
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="17" style="text-align: center;">No data found.</td></tr>`;
+            const colSpan = 5 + selectedMonths.length;
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center;">No data found.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = data.map(row => {
-            // ตรวจสอบค่า Target (istarget) เพื่อความสวยงาม
-            const targetIcon = row.istarget ? '🎯 ' : '';
+        // Update table header
+        const thead = document.querySelector('.report-table thead');
+        thead.innerHTML = generateTableHeaders();
 
-            return `
+        // Group data by group_desc
+        const groupedData = {};
+        data.forEach(row => {
+            const groupKey = row.group_desc || 'No Group';
+            if (!groupedData[groupKey]) {
+                groupedData[groupKey] = [];
+            }
+            groupedData[groupKey].push(row);
+        });
+
+        // Generate rows with group headers
+        let html = '';
+        const colSpan = 5 + selectedMonths.length;
+        
+        Object.entries(groupedData).forEach(([groupName, rows]) => {
+            // Add group header row
+            html += `
+            <tr class="group-header-row" style="background-color: #e2e8f0; font-weight: bold;">
+                <td colspan="${colSpan}" style="padding: 12px 15px; text-align: left; color: #2d3748; border-bottom: 2px solid #cbd5e0;">
+                    📊 ${groupName}
+                </td>
+            </tr>
+            `;
+            
+            // Add data rows for this group
+            rows.forEach(row => {
+                const targetIcon = row.istarget ? '🎯 ' : '';
+                let monthCells = '';
+                
+                selectedMonths.forEach(m => {
+                    const val = row[`m${m}`];
+                    monthCells += `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
+                });
+                
+                // Create KPI ID link
+                let kpiIdCell = '';
+                if (row.linkUrl) {
+                    kpiIdCell = `<a href="${row.linkUrl}" target="_blank" class="kpi-link">${row.kpi_id}</a>`;
+                } else {
+                    kpiIdCell = `<strong>${row.kpi_id}</strong>`;
+                }
+                
+                html += `
             <tr>
-                <td><strong>${row.kpi_id}</strong></td>
+                <td>${kpiIdCell}</td>
+                <td style="text-align: left; font-size: 0.9rem;">
+                    ${row.department_desc || '<span class="empty-value">No Department</span>'}
+                </td>
                 <td style="text-align: left; font-size: 0.9rem;">
                     ${row.activities || '<span class="empty-value">No Title</span>'}
                 </td>
@@ -263,14 +461,13 @@
                 <td style="text-align: center; font-weight: bold; color: #2c5282;">
                     ${targetIcon}${row.source_result || '-'}
                 </td>
-
-                ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => {
-                const val = row[`m${m}`];
-                return `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
-            }).join('')}
+                ${monthCells}
             </tr>
         `;
-        }).join('');
+            });
+        });
+
+        tbody.innerHTML = html;
     }
 
     function formatNumber(num) {
@@ -299,6 +496,7 @@
     // Load initial report
     document.addEventListener('DOMContentLoaded', function () {
         populateYears();
+        initializeMonthSelector();
         loadReport();
     });
 </script>

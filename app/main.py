@@ -15,19 +15,29 @@ app = Flask(__name__)
 # ==================== Configuration ====================
 
 # Create logs directory if it doesn't exist
-logs_dir = Path('/app/logs')
+logs_dir = Path('logs')
 logs_dir.mkdir(exist_ok=True)
 
 # Configure Flask logging
 if not app.debug:
-    # Production logging
-    file_handler = logging.FileHandler('/app/logs/app.log')
-    file_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    file_handler.setFormatter(formatter)
-    app.logger.addHandler(file_handler)
+    try:
+        # Production logging
+        file_handler = logging.FileHandler('logs/app.log')
+        file_handler.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        file_handler.setFormatter(formatter)
+        app.logger.addHandler(file_handler)
+    except PermissionError:
+        # Fallback to console logging if file logging fails
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        console_handler.setFormatter(formatter)
+        app.logger.addHandler(console_handler)
 
 app.logger.setLevel(logging.INFO)
 app.logger.info("KPI Pro application initialized")
