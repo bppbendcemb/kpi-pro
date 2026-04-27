@@ -430,12 +430,13 @@
 {% endblock %}
 
 {% block content %}
-    <div class="add-container">
-        <h1>📝 Add/Update KPI Data</h1>
+<div class="add-container">
+    <h1>📝 Add/Update KPI Data</h1>
 
-        <form id="multi-add-form" class="form-card">
-            <div class="selection-card">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+    <form id="multi-add-form" class="form-card">
+        <div class="selection-card">
+            <div
+                style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
 
                 <div class="year-section" style="margin-bottom: 0;">
                     <label class="kpi-label" for="year">ปี (Year):</label>
@@ -564,54 +565,8 @@
                 Save All KPI Data
             </button>
         </div>
-        </form>
-
-        <!-- Query2 Section - KPI Monthly Data -->
-        <div class="query2-section" style="margin-top: 3rem;">
-            <div class="query2-card">
-                <h2 style="color: #1e293b; margin-bottom: 1rem;">📊 KPI Monthly Data Overview</h2>
-                <p style="color: #64748b; margin-bottom: 2rem;">แสดงข้อมูล KPI ที่มีค่าประจำเดือน (M1-M12) ในปีปัจจุบัน</p>
-
-                <div id="query2-loading" class="loading" style="display: none;">
-                    <div>Loading KPI monthly data...</div>
-                </div>
-
-                <div id="query2-error" class="error" style="display: none;"></div>
-
-                <div class="table-container" id="query2-table-container" style="display: none;">
-                    <div class="table-wrapper">
-                        <table class="data-table" id="query2-table">
-                            <thead>
-                                <tr>
-                                    <th>KPI ID</th>
-                                    <th>Group</th>
-                                    <th>Department</th>
-                                    <th>Activity</th>
-                                    <th>Description</th>
-                                    <th>Status</th>
-                                    <th class="month-column">M1</th>
-                                    <th class="month-column">M2</th>
-                                    <th class="month-column">M3</th>
-                                    <th class="month-column">M4</th>
-                                    <th class="month-column">M5</th>
-                                    <th class="month-column">M6</th>
-                                    <th class="month-column">M7</th>
-                                    <th class="month-column">M8</th>
-                                    <th class="month-column">M9</th>
-                                    <th class="month-column">M10</th>
-                                    <th class="month-column">M11</th>
-                                    <th class="month-column">M12</th>
-                                </tr>
-                            </thead>
-                            <tbody id="query2-table-body">
-                                <!-- Query2 data will be loaded here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </form>
+</div>
 {% endblock %}
 
 {% block extra_js %}
