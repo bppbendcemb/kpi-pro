@@ -3,139 +3,207 @@
 {% block title %}Sync Data - KPI Pro{% endblock %}
 
 {% block content %}
-<section id="sync-section" class="sync-section">
-    <div class="section-header">
-        <h2>🔄 KPI Data Synchronization</h2>
-        <p class="description">Sync KPI data from SQL Server to PostgreSQL</p>
+<div class="container py-5">
+
+    <!-- Header -->
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="fw-bold text-primary">🔄 KPI Data Synchronization</h1>
+            <p class="text-muted fs-5">Sync KPI data from SQL Server to PostgreSQL</p>
+            <hr class="mx-auto border-primary opacity-100" style="width:100px; height:3px;">
+        </div>
     </div>
 
-    <div class="sync-container">
+    <div class="row g-4">
 
+        <!-- Main Card -->
+        <div class="col-lg-8">
+            <div class="card shadow border-0 rounded-4 h-100">
+                <div class="card-header bg-primary text-white rounded-top-4 py-3">
+                    <h4 class="mb-0">📅 Monthly KPI Report Sync</h4>
+                </div>
 
-        <div class="sync-card">
-            <h3>📅 Monthly KPI Report Sync</h3>
-            
-            <div class="status-info">
-                <div class="status-item">
-                    <span class="label">Source:</span>
-                    <span class="value">sp_GetMonthlyKPIReport</span>
-                </div>
-                <div class="status-item">
-                    <span class="label">Destination:</span>
-                    <span class="value">monthly_kpi_report</span>
-                </div>
-                <div class="status-item">
-                    <span class="label">Last Status:</span>
-                    <span id="monthly-sync-status" class="value status-idle">Ready</span>
+                <div class="card-body p-4">
+
+                    <!-- Info Table -->
+                    <div class="table-responsive mb-4">
+                        <table class="table align-middle">
+                            <tbody>
+                                <tr>
+                                    <th class="text-muted">Source</th>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            sp_GetMonthlyKPIReport
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Destination</th>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            monthly_kpi_report
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">Last Status</th>
+                                    <td>
+                                        <span id="monthly-sync-status" class="badge bg-secondary">
+                                            Ready
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Form -->
+                    <div class="bg-light rounded-4 p-4 border">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="year-input" class="form-label fw-semibold">
+                                    ระบุปี (Year)
+                                </label>
+                                <input type="number" id="year-input" class="form-control form-control-lg" min="2018"
+                                    max="2099" value="2026">
+                            </div>
+
+                            <div class="col-md-8">
+                                <button id="monthly-sync-btn" class="btn btn-primary btn-lg w-100"
+                                    onclick="triggerMonthlySyncWithYear()">
+                                    📊 Sync Monthly KPI
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="text-center mt-4">
+                        <div id="monthly-status-message" class="alert d-none" role="alert"></div>
+
+                        <div id="monthly-loading-spinner" class="spinner-border text-primary d-none" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+
+                    <!-- Result -->
+                    <div id="monthly-result-section" class="card bg-dark text-white border-0 mt-4 d-none rounded-4">
+                        <div class="card-body">
+                            <h5 class="text-info mb-4">📋 Sync Result Summary</h5>
+
+                            <div class="row text-center">
+                                <div class="col-md-4 border-end">
+                                    <small class="text-secondary d-block">Year</small>
+                                    <h4 id="monthly-sync-year">--</h4>
+                                </div>
+
+                                <div class="col-md-4 border-end">
+                                    <small class="text-secondary d-block">Rows Synced</small>
+                                    <h4 id="monthly-row-count" class="text-warning">0</h4>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <small class="text-secondary d-block">Completed At</small>
+                                    <small id="monthly-sync-timestamp">--</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
+        </div>
 
-            <div class="sync-controls">
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <label for="year-input" style="font-weight: 600;">Year:</label>
-                    <input 
-                        type="number" 
-                        id="year-input" 
-                        min="2018" 
-                        max="2099" 
-                        value="2026" 
-                        style="padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; width: 100px;"
-                    >
-                    <button id="monthly-sync-btn" class="btn btn-primary" onclick="triggerMonthlySyncWithYear()">
-                        <span class="btn-icon">📊</span>
-                        <span class="btn-text">Sync Monthly KPI</span>
-                    </button>
-                </div>
-                <button id="monthly-reset-btn" class="btn btn-secondary" onclick="resetMonthlySyncStatus()" style="display: none; margin-top: 1rem;">
-                    <span class="btn-icon">↻</span>
-                    <span class="btn-text">Reset</span>
-                </button>
-            </div>
+        <!-- Side Card -->
+        <div class="col-lg-4">
+            <div class="card bg-primary text-white border-0 shadow rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4">ℹ️ Technical Info</h4>
 
-            <div id="monthly-status-message" class="status-message" style="display: none;"></div>
-            <div id="monthly-loading-spinner" class="loading-spinner" style="display: none;"></div>
+                    <div class="mb-4">
+                        <h6>⚙️ Operation</h6>
+                        <p class="small text-white-50 mb-0">
+                            Update existing data or insert new based on KPI ID.
+                        </p>
+                    </div>
 
-            <div id="monthly-result-section" class="result-section" style="display: none;">
-                <div class="result-header">
-                    <h4>📋 Sync Result</h4>
-                </div>
-                <div class="result-content">
-                    <p>Year: <strong id="monthly-sync-year">--</strong></p>
-                    <p>Rows synced: <strong id="monthly-row-count">0</strong></p>
-                    <p>Sync completed at: <strong id="monthly-sync-timestamp">--</strong></p>
+                    <div class="mb-4">
+                        <h6>🔄 Format</h6>
+                        <p class="small text-white-50 mb-0">
+                            Automatic type matching via Pandas.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h6>🐳 Network</h6>
+                        <p class="small text-white-50 mb-0">
+                            Docker Compose internal bridge connection.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="info-card">
-            <h3>ℹ️ Information</h3>
-            <ul class="info-list">
-                <li>
-                    <strong>Source:</strong> Executes MSSQL Stored Procedure
-                    <code>sp_GetMonthlyKPIReport</code>
-                </li>
-                <li>
-                    <strong>Destination:</strong> Upserts to PostgreSQL table
-                    <code>public.data</code>
-                </li>
-                <li>
-                    <strong>Operation:</strong> Upsert (Update if exists, Insert if new) based on KPI ID, Year, and Month
-                </li>
-                <li>
-                    <strong>Format:</strong> Automatic data type conversion
-                </li>
-                <li>
-                    <strong>Network:</strong> Uses Docker Compose network
-                </li>
-            </ul>
-        </div>
-    </div>
-</section>
-
-<section id="info-section" class="info-section">
-    <div class="section-header">
-        <h2>📂 About KPI Pro</h2>
-        <p class="description">System Overview and Features</p>
     </div>
 
-    <div class="features-grid">
-        <div class="feature-card">
-            <div class="feature-icon">🗄️</div>
-            <h4>Multi-Database Support</h4>
-            <p>Connect and sync data between SQL Server and PostgreSQL seamlessly.</p>
+    <!-- Features -->
+    <div class="row mt-5 g-4 text-center">
+
+        <div class="col-12 mb-2">
+            <h2 class="fw-bold">📂 System Features</h2>
         </div>
 
-        <div class="feature-card">
-            <div class="feature-icon">⚡</div>
-            <h4>Fast Sync</h4>
-            <p>Optimized data transfer using Pandas for efficient data manipulation.</p>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 hover-up rounded-4">
+                <div class="card-body p-4">
+                    <div class="fs-1 text-primary mb-3">🗄️</div>
+                    <h5>Multi-Database</h5>
+                    <p class="text-muted small">
+                        Connect SQL Server and PostgreSQL seamlessly.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h4>KPI Metrics</h4>
-            <p>Centralized platform for managing Key Performance Indicators across your organization.</p>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 hover-up rounded-4">
+                <div class="card-body p-4">
+                    <div class="fs-1 text-success mb-3">⚡</div>
+                    <h5>Fast Sync</h5>
+                    <p class="text-muted small">
+                        Optimized transfer using high-performance engines.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <div class="feature-card">
-            <div class="feature-icon">🐳</div>
-            <h4>Containerized</h4>
-            <p>Docker and Docker Compose for easy deployment and scaling.</p>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 hover-up rounded-4">
+                <div class="card-body p-4">
+                    <div class="fs-1 text-warning mb-3">📈</div>
+                    <h5>Data Integrity</h5>
+                    <p class="text-muted small">
+                        Automatic validation during every transfer.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <div class="feature-card">
-            <div class="feature-icon">📈</div>
-            <h4>Data Integrity</h4>
-            <p>Automatic data validation and type conversion during synchronization.</p>
-        </div>
-
-        <div class="feature-card">
-            <div class="feature-icon">🔐</div>
-            <h4>Secure</h4>
-            <p>Environment-based configuration for sensitive database credentials.</p>
-        </div>
     </div>
-</section>
+
+</div>
+
+<style>
+    .hover-up {
+        transition: all 0.3s ease;
+    }
+
+    .hover-up:hover {
+        transform: translateY(-8px);
+    }
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .25);
+    }
+</style>
 {% endblock %}
-
-{% block extra_js %}{% endblock %}

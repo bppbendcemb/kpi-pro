@@ -48,6 +48,7 @@
         color: #4a5568;
         font-weight: 700;
         text-transform: uppercase;
+        text-align: center !important;
         font-size: 0.75rem;
         letter-spacing: 0.05em;
         position: sticky;
@@ -58,41 +59,105 @@
 
     /* --- ระบบล็อกคอลัมน์ (Sticky Columns) --- */
 
-    /* คอลัมน์ที่ 1: KPI ID */
+    /* คอลัมน์ที่ 1: KPI ID (กว้าง 80px) */
     .report-table th:nth-child(1),
     .report-table td:nth-child(1) {
         position: sticky;
         left: 0;
         z-index: 5;
         background-color: white;
-        text-align: left;
-        font-weight: 600;
         min-width: 80px;
+        width: 80px;
     }
 
-    /* คอลัมน์ที่ 2: Department */
+    /* คอลัมน์ที่ 2: Department (กว้าง 120px) */
     .report-table th:nth-child(2),
     .report-table td:nth-child(2) {
         position: sticky;
         left: 80px;
-        /* ต้องระบุระยะจากซ้ายให้พอดีกับความกว้างคอลัมน์แรก */
         z-index: 5;
         background-color: white;
-        text-align: left;
-        white-space: normal;
-        /* ตัดบรรทัดได้ */
-        min-width: 250px;
-        max-width: 350px;
+        min-width: 120px;
+        width: 120px;
+    }
+
+    /* คอลัมน์ที่ 3: Activity (กว้าง 180px) */
+    .report-table th:nth-child(3),
+    .report-table td:nth-child(3) {
+        position: sticky;
+        left: 200px;
+        z-index: 5;
+        background-color: white;
+        min-width: 180px;
+        width: 180px;
+    }
+
+    /* คอลัมน์ที่ 4: Description (กว้าง 200px) */
+    .report-table th:nth-child(4),
+    .report-table td:nth-child(4) {
+        position: sticky;
+        left: 380px;
+        z-index: 5;
+        background-color: white;
+        min-width: 200px;
+        width: 200px;
+    }
+
+    /* คอลัมน์ที่ 5: Unit (กว้าง 80px) */
+    .report-table th:nth-child(5),
+    .report-table td:nth-child(5) {
+        position: sticky;
+        left: 580px;
+        z-index: 5;
+        background-color: white;
+        min-width: 80px;
+        width: 80px;
+    }
+
+    /* คอลัมน์ที่ 6: Target (กว้าง 100px) */
+    .report-table th:nth-child(6),
+    .report-table td:nth-child(6) {
+        position: sticky;
+        left: 660px;
+        z-index: 5;
+        background-color: white;
         border-right: 2px solid #edf2f7;
-        /* เพิ่มเส้นแบ่งให้ดูชัดเจน */
+        min-width: 100px;
+        width: 100px;
     }
 
     /* แก้ไขพื้นหลังเมื่อ Hover และสีหัวตารางที่เป็น Sticky */
+    /* หัวตารางที่ถูกล็อก (1-6) ต้องอยู่สูงสุด */
     .report-table th:nth-child(1),
-    .report-table th:nth-child(2) {
+    .report-table th:nth-child(2),
+    .report-table th:nth-child(3),
+    .report-table th:nth-child(4),
+    .report-table th:nth-child(5),
+    .report-table th:nth-child(6) {
+        z-index: 20 !important;
+        /* สูงกว่า z-index ของ td และ th ปกติ */
         background-color: #f7fafc;
-        z-index: 11;
-        /* หัวตารางที่ล็อกต้องอยู่สูงกว่าเนื้อหาที่ล็อก */
+        /* สีพื้นหลังหัวตาราง */
+    }
+
+    /* ชิดซ้าย สำหรับ Column 1-4 */
+    .report-table th:nth-child(1),
+    .report-table td:nth-child(1),
+    .report-table th:nth-child(2),
+    .report-table td:nth-child(2),
+    .report-table th:nth-child(3),
+    .report-table td:nth-child(3),
+    .report-table th:nth-child(4),
+    .report-table td:nth-child(4) {
+        text-align: left !important;
+    }
+
+    /* จัดกึ่งกลาง สำหรับ Column 5-6 */
+    .report-table th:nth-child(5),
+    .report-table td:nth-child(5),
+    .report-table th:nth-child(6),
+    .report-table td:nth-child(6) {
+        text-align: center !important;
     }
 
     /* Group header row styling */
@@ -110,14 +175,17 @@
     }
 
     .report-table tr:hover td:nth-child(1),
-    .report-table tr:hover td:nth-child(2) {
+    .report-table tr:hover td:nth-child(2),
+    .report-table tr:hover td:nth-child(3),
+    .report-table tr:hover td:nth-child(4),
+    .report-table tr:hover td:nth-child(5),
+    .report-table tr:hover td:nth-child(6) {
         background-color: #f1f5f9;
         /* คอลัมน์ที่ล็อกก็ต้องเปลี่ยนสีด้วย */
     }
 
-    /* คอลัมน์อื่นๆ (Unit, Target) */
-    .report-table td:nth-child(3),
-    .report-table td:nth-child(4) {
+    /* คอลัมน์อื่นๆ (เดือน) */
+    .report-table td:nth-child(n+7) {
         text-align: center;
     }
 
@@ -224,6 +292,7 @@
     .kpi-link:active {
         color: #1e3a8a;
     }
+
 </style>
 {% endblock %}
 
@@ -247,10 +316,11 @@
         <!-- Filter Section -->
         <div class="filter-section">
             <div class="filter-label">
-                <button class="select-all-btn" id="select-all-btn" onclick="toggleAllMonths()" title="Select/Deselect All Months">✓</button>
+                <button class="select-all-btn" id="select-all-btn" onclick="toggleAllMonths()"
+                    title="Select/Deselect All Months">✓</button>
                 📅 Select Months:
-            </div> 
-            <div class="month-selector" id="month-selector">           
+            </div>
+            <div class="month-selector" id="month-selector">
             </div>
         </div>
 
@@ -265,7 +335,8 @@
                         <tr>
                             <th>KPI ID</th>
                             <th>Department</th>
-                            <th style="min-width: 200px;">Activity</th>
+                            <th>Activity</th>
+                            <th>Description</th>
                             <th>Unit</th>
                             <th>Target</th>
                             <th>JAN</th>
@@ -284,7 +355,7 @@
                     </thead>
                     <tbody id="report-tbody">
                         <tr>
-                        <td colspan="17" style="text-align: center; padding: 3rem;">Loading report data...</td>
+                            <td colspan="17" style="text-align: center; padding: 3rem;">Loading report data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -295,16 +366,16 @@
 
 <script>
     const SERVER_CURRENT_YEAR = {{ current_year }};
-    
+
     // State management
     let selectedMonths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; // Default: all months
-    
+
     const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
     function initializeMonthSelector() {
         const selector = document.getElementById('month-selector');
         selector.innerHTML = '';
-        
+
         monthNames.forEach((month, index) => {
             const monthNum = index + 1;
             const checked = selectedMonths.includes(monthNum) ? 'checked' : '';
@@ -315,7 +386,7 @@
                 </div>
             `;
         });
-        
+
         updateSelectAllButton();
     }
 
@@ -357,7 +428,7 @@
         const tbody = document.getElementById('report-tbody');
         const loader = document.getElementById('report-loading');
 
-        const colSpan = 5 + selectedMonths.length;
+        const colSpan = 6 + selectedMonths.length;
         try {
             const response = await fetch(`/api/report?year=${year}`);
             const result = await response.json();
@@ -380,15 +451,16 @@
             <tr>
                 <th>KPI ID</th>
                 <th>Department</th>
-                <th style="min-width: 200px;">Activity</th>
+                <th>Activity</th>
+                <th>Description</th>
                 <th>Unit</th>
                 <th>Target</th>
         `;
-        
+
         selectedMonths.forEach(m => {
             headers += `<th>${monthNames[m - 1]}</th>`;
         });
-        
+
         headers += `</tr>`;
         return headers;
     }
@@ -397,7 +469,7 @@
         const tbody = document.getElementById('report-tbody');
 
         if (data.length === 0) {
-            const colSpan = 5 + selectedMonths.length;
+            const colSpan = 6 + selectedMonths.length;
             tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center;">No data found.</td></tr>`;
             return;
         }
@@ -418,8 +490,8 @@
 
         // Generate rows with group headers
         let html = '';
-        const colSpan = 5 + selectedMonths.length;
-        
+        const colSpan = 6 + selectedMonths.length;
+
         Object.entries(groupedData).forEach(([groupName, rows]) => {
             // Add group header row
             html += `
@@ -429,17 +501,17 @@
                 </td>
             </tr>
             `;
-            
+
             // Add data rows for this group
             rows.forEach(row => {
-                const targetIcon = row.istarget ? '🎯 ' : '';
+                const targetIcon = row.istarget ? '' : '';
                 let monthCells = '';
-                
+
                 selectedMonths.forEach(m => {
                     const val = row[`m${m}`];
                     monthCells += `<td class="value-cell">${val !== null ? formatNumber(val) : '<span class="empty-value">-</span>'}</td>`;
                 });
-                
+
                 // Create KPI ID link
                 let kpiIdCell = '';
                 if (row.linkUrl) {
@@ -447,15 +519,19 @@
                 } else {
                     kpiIdCell = `<strong>${row.kpi_id}</strong>`;
                 }
-                
+
                 html += `
             <tr>
                 <td>${kpiIdCell}</td>
-                <td style="text-align: left; font-size: 0.9rem;">
+                <td style="text-align: left; font-size: 0.9rem; 
+                    color: #4a5568; wrap: break-word; max-width: 150px; white-space: normal;">
                     ${row.department_desc || '<span class="empty-value">No Department</span>'}
                 </td>
-                <td style="text-align: left; font-size: 0.9rem;">
+                <td style="text-align: left; font-size: 0.9rem; wrap: break-word; max-width: 300px; white-space: normal;">
                     ${row.activities || '<span class="empty-value">No Title</span>'}
+                </td>
+                <td style="text-align: left; font-size: 0.85rem; color: #4a5568; wrap: break-word; max-width: 400px; white-space: normal;">
+                    ${row.description || '<span class="empty-value">No Description</span>'}
                 </td>
                 <td style="text-align: center;">${row.unit || '-'}</td>
                 <td style="text-align: center; font-weight: bold; color: #2c5282;">

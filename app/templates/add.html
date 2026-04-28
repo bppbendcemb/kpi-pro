@@ -18,6 +18,7 @@
         border-radius: 18px;
         box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
         padding: 1.8rem;
+        padding-bottom: 8rem;
         margin-bottom: 2rem;
         border: 1px solid #e5e7eb;
     }
@@ -33,9 +34,10 @@
 
     .kpi-list {
         width: 100%;
-        max-height: none;
+        /* max-height: calc(100vh - 315px); */
         overflow-x: auto;
         overflow-y: auto;
+        position: relative;
         border: 1px solid #e2e8f0;
         border-radius: 14px;
         padding: 1rem;
@@ -50,10 +52,7 @@
     }
 
     .kpi-list table thead th {
-        position: sticky;
-        top: 0;
         background: white;
-        z-index: 10;
         border-bottom: 3px solid #e2e8f0;
         padding: 12px 8px;
         font-weight: 700;
@@ -134,17 +133,36 @@
     }
 
     .form-actions {
-        margin-top: 3rem;
+        position: fixed;
+        bottom: 20px;
+        right: 10rem;
+        z-index: 1000;
         display: flex;
-        justify-content: center;
-        gap: 1.5rem;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 16px;
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.15);
+        backdrop-filter: blur(8px);
     }
 
     .btn-submit {
-        padding: 1rem 3rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 10px;
+        padding: 1rem 2.5rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        border-radius: 12px;
+    }
+
+    @media (max-width: 768px) {
+        .form-actions {
+            left: 10px;
+            right: 10px;
+            bottom: 12px;
+            width: auto;
+            justify-content: center;
+        }
     }
 
     h1 {
@@ -158,6 +176,9 @@
     /* month button */
 
     .selection-card {
+        position: sticky;
+        top: 20px;
+        z-index: 101;
         background: #fff;
         padding: 20px;
         border-radius: 12px;
@@ -431,37 +452,72 @@
 
 {% block content %}
 <div class="add-container">
-    <h1>📝 Add/Update KPI Data</h1>
+    <!-- <h1>📝 Add/Update KPI Data</h1> -->
 
     <form id="multi-add-form" class="form-card">
         <div class="selection-card">
-            <div
-                style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
 
-                <div class="year-section" style="margin-bottom: 0;">
-                    <label class="kpi-label" for="year">ปี (Year):</label>
-                    <select name="year" id="year" class="kpi-control" onchange="updateData()">
-                        {% for y in range(year, year - 10, -1) %}
-                        <option value="{{ y }}" {% if y==year %}selected{% endif %}>{{ y }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+            <div class="container-fluid">
 
-                <div class="selected-info">
-                    <span class="badge bg-primary" id="current_selection_display"
-                        style="font-size: 1.1rem; padding: 12px 20px; border-radius: 8px;">
-                        กำลังบันทึกข้อมูลเดือน:
-                        <strong id="display_val" style="font-size: 1.4rem; margin-left: 5px;">
+                <div class="row align-items-center g-3 mb-4">
+
+                    <!-- Year Select -->
+                    <div class="col-lg-3 col-md-4 col-12">
+                        <div class="bg-light rounded-pill shadow-sm px-3 py-2 d-flex align-items-center gap-2">
+
+                            <label for="year" class="fw-semibold text-muted mb-0 small text-nowrap">
+                                <i class="fas fa-calendar-alt me-1 text-primary"></i>
+                                ปี (Year):
+                            </label>
+
+                            <select name="year" id="year"
+                                class="form-select form-select-sm border-primary rounded-pill fw-bold text-primary"
+                                onchange="updateData()">
+
+                                {% for y in range(year, year - 10, -1) %}
+                                <option value="{{ y }}" {% if y==year %}selected{% endif %}>
+                                    {{ y }}
+                                </option>
+                                {% endfor %}
+
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="col-lg-6 col-md-4 col-12 text-center">
+                        <h2 class="fw-bold text-primary mb-0">
+                            📝 เพิ่ม / แก้ไข ข้อมูล KPI
+                        </h2>
+                    </div>
+
+                    <!-- Current Selection -->
+                    <div class="col-lg-3 col-md-4 col-12 text-md-end text-center">
+                        <span id="current_selection_display">
                             {{ selected_month }} / {{ year }}
-                        </strong>
-                    </span>
+                        </span>
+                    </div>
+
                 </div>
+
             </div>
-            <br>
-            <hr>
+
+            <style>
+                #year:hover,
+                #year:focus {
+                    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, .15);
+                }
+
+                @media (max-width: 768px) {
+                    h2 {
+                        font-size: 1.35rem;
+                    }
+                }
+            </style>
+
 
             <div class="month-section">
-                <label class="kpi-label">คลิกเลือกเดือน (Month):</label>
+                <!-- <label class="kpi-label">คลิกเลือกเดือน (Month):</label> -->
                 <div class="month-grid" id="monthGrid">
                     {% set months = [
                     ('1', 'ม.ค.'), ('2', 'ก.พ.'), ('3', 'มี.ค.'), ('4', 'เม.ย.'),
@@ -490,6 +546,8 @@
                         <th style="width: 250px;">Description</th>
                         <th style="width: 80px;">Status</th>
                         <th style="width: 120px;">Value</th>
+                        <th style="width: 100px;">Image</th>
+                        <th style="width: 100px;">Link</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -552,6 +610,31 @@
                                 class="form-control kpi-value-input" placeholder="Enter value" {% if kpi_item and
                                 (kpi_item.active=="0" or kpi_item.active==0) %}disabled{% endif %}>
                         </td>
+                        <td style="text-align: center;">
+                            {% set image_filename = 'img/' + kpi_id|string + '.png' %}
+                            {% if kpi_item and kpi_item.image_url %}
+                            <a href="/img/{{ kpi_id }}" target="_blank" title="เปิดรูปภาพ KPI {{ kpi_id }}">
+                                <img src="{{ kpi_item.image_url }}" alt="KPI Image"
+                                    style="max-width: 80px; max-height: 80px; border-radius: 4px; cursor: pointer;">
+                            </a>
+                            {% else %}
+                            <a href="/img/{{ kpi_id }}" target="_blank" class="url-link"
+                                title="เปิดรูปภาพ KPI {{ kpi_id }}">
+                                📷 ดูรูป
+                            </a>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if kpi_item and kpi_item.linkUrl %}
+                            <a href="{{ kpi_item.linkUrl }}" target="_blank" class="kpi-link">{{ kpi_item.source
+                                }}</a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+
+
                         </tr>
                         {% endfor %}
                 </tbody>
@@ -560,9 +643,9 @@
 
 
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">Cancel</button>
+            <!-- <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">Cancel</button> -->
             <button type="submit" id="submit-btn" class="btn btn-primary btn-submit">
-                Save All KPI Data
+                Save
             </button>
         </div>
     </form>
@@ -647,7 +730,71 @@
     document.addEventListener('DOMContentLoaded', function () {
         refreshUI();
         loadQuery2Data(); // โหลดข้อมูล query2 เมื่อหน้าโหลดเสร็จ
+        attachFormSubmitHandler();
     });
+
+    async function attachFormSubmitHandler() {
+        const form = document.getElementById('multi-add-form');
+        if (!form) return;
+
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const year = parseInt(document.getElementById('year').value, 10);
+            const month = parseInt(document.getElementById('month_input').value, 10);
+            const data = [];
+
+            document.querySelectorAll('.kpi-value-input').forEach(input => {
+                const value = input.value.trim();
+                if (value !== '') {
+                    const kpiId = parseInt(input.name.replace('kpi_', ''), 10);
+                    if (!Number.isNaN(kpiId) && !Number.isNaN(parseFloat(value))) {
+                        data.push({
+                            kpi_id: kpiId,
+                            value: parseFloat(value),
+                        });
+                    }
+                }
+            });
+
+            if (!year || !month) {
+                alert('กรุณาเลือกปีและเดือนก่อนบันทึก');
+                return;
+            }
+
+            if (data.length === 0) {
+                alert('กรุณากรอกค่าข้อมูล KPI อย่างน้อยหนึ่งรายการ');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/data/batch-add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        year,
+                        month,
+                        data,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(result.message || 'บันทึกข้อมูลสำเร็จ');
+                    refreshUI();
+                } else {
+                    console.error('Save error:', result);
+                    alert(result.error || 'บันทึกข้อมูลไม่สำเร็จ');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                alert('เกิดข้อผิดพลาดระหว่างบันทึกข้อมูล');
+            }
+        });
+    }
 
     // ฟังก์ชันโหลดข้อมูล Query2
     async function loadQuery2Data() {
@@ -681,6 +828,7 @@
             loading.style.display = 'none';
         }
     }
+
 
     // ฟังก์ชันแสดงตาราง Query2
     function renderQuery2Table(data) {

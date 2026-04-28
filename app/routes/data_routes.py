@@ -707,3 +707,28 @@ ORDER BY CAST(dt.kpi_id AS INTEGER);
         logger.error(f"Error fetching KPI data: {str(e)}", exc_info=True)
 
     return render_template("add.html", year=current_year, kpi_ids=kpi_ids)
+
+
+@data_bp.route("/img/<int:kpi_id>")
+def serve_kpi_image(kpi_id):
+    """
+    Serve KPI images from the static/img folder
+    GET /img/<kpi_id>
+    
+    Returns:
+        Image file or 404 if not found
+    """
+    from flask import send_from_directory
+    import os
+    
+    img_path = os.path.join(current_app.static_folder, 'img', f'{kpi_id}.png')
+    
+    if os.path.exists(img_path):
+        return send_from_directory(os.path.join(current_app.static_folder, 'img'), f'{kpi_id}.png')
+    else:
+        # Return a default "no image" placeholder
+        no_image_path = os.path.join(current_app.static_folder, 'img', 'no-image.jpg')
+        if os.path.exists(no_image_path):
+            return send_from_directory(os.path.join(current_app.static_folder, 'img'), 'no-image.jpg')
+        else:
+            return jsonify({"status": "error", "message": "Image not found"}), 404
