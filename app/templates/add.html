@@ -448,6 +448,127 @@
         overflow-y: auto;
     }
 </style>
+
+
+<!-- แบบ checkbox เลือกหลายแถว -->
+<!-- <style>
+    .selected-row {
+        background-color: #e3f2fd !important;
+        /* สีฟ้าอ่อนเมื่อเลือก */
+        transition: 0.3s;
+    }
+
+    .disabled-row {
+        opacity: 0.6;
+        background-color: #f8f9fa;
+    }
+</style> -->
+
+
+<!-- แบบ Radio button เลือกแถวเดียว -->
+<style>
+    /* สีไฮไลท์เมื่อเลือก Radio button */
+    .selected-row {
+        background-color: #fff9c4 !important;
+        /* สีเหลืองอ่อนช่วยให้เด่นชัด */
+        border-left: 4px solid #fbc02d;
+        /* เพิ่มเส้นขอบด้านซ้ายให้ดูว่ากำลังเลือกอยู่ */
+    }
+
+    /* ตกแต่ง Radio ให้ดูใหญ่ขึ้นกดง่าย */
+    .row-radio {
+        transform: scale(1.2);
+        cursor: pointer;
+    }
+
+    .disabled-row {
+        background-color: #f5f5f5;
+        color: #9e9e9e;
+    }
+</style>
+
+
+<!-- สำหรับ Modal แสดงรูปภาพขนาดเต็มเมื่อคลิกที่รูปขนาดเล็กในตาราง -->
+<style>
+    /* พื้นหลัง Modal */
+    .modal-custom {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        padding-top: 50px;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.85);
+        /* พื้นหลังดำโปร่งแสง */
+        backdrop-filter: blur(5px);
+    }
+
+    /* คอนเทนเนอร์รูปภาพ */
+    .modal-content-wrapper {
+        margin: auto;
+        display: block;
+        width: 80%;
+        max-width: 900px;
+        text-align: center;
+    }
+
+    /* ตัวรูปภาพขยาย */
+    .modal-content-img {
+        margin: auto;
+        display: block;
+        max-width: 100%;
+        max-height: 80vh;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        animation: zoomIn 0.3s ease;
+    }
+
+    /* ข้อความใต้ภาพ */
+    .modal-caption {
+        margin: auto;
+        display: block;
+        width: 80%;
+        text-align: center;
+        color: #fff;
+        padding: 15px 0;
+        font-size: 1.2rem;
+    }
+
+    /* ปุ่มปิด */
+    .close-modal {
+        position: absolute;
+        top: 20px;
+        right: 35px;
+        color: #f1f1f1;
+        font-size: 40px;
+        font-weight: bold;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+
+    .close-modal:hover {
+        color: #bbb;
+    }
+
+    /* Animation */
+    @keyframes zoomIn {
+        from {
+            transform: scale(0.7);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+
+
 {% endblock %}
 
 {% block content %}
@@ -540,14 +661,17 @@
             <table>
                 <thead>
                     <tr>
+
                         <th style="width: 20px;">KPI ID</th>
-                        <th style="width: 20px;">ฝ่าย/แผนก</th>
+                        <th style="width: 50px;">ฝ่าย/แผนก</th>
                         <th style="width: 200px;">Activity</th>
                         <th style="width: 250px;">Description</th>
                         <th style="width: 80px;">Status</th>
                         <th style="width: 120px;">Value</th>
+                        <th style="width: 80px;">Unit</th>
                         <th style="width: 100px;">Image</th>
                         <th style="width: 100px;">Link</th>
+                        <th style="width: 40px; text-align: center;">เลือก</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -560,39 +684,24 @@
 
                     {% for kpi_id in kpi_ids %}
                     {% set kpi_item = kpi_info.get(kpi_id) %}
-                    <tr{% if kpi_item and (kpi_item.active=='0' or kpi_item.active==0) %} class="disabled-row" {% endif
-                        %}>
+                    <tr id="row_{{ kpi_id }}" {% if kpi_item and (kpi_item.active=='0' or kpi_item.active==0) %}
+                        class="disabled-row" {% endif %}>
+
 
                         <td>
-                            {% if kpi_item and kpi_item.linkUrl %}
-                            <a href="{{ kpi_item.linkUrl }}" target="_blank" class="kpi-link">{{ kpi_id }}</a>
-                            {% else %}
                             <span class="fw-bold">{{ kpi_id }}</span>
-                            {% endif %}
                         </td>
 
                         <td style="font-size: 0.85rem;">
-                            {% if kpi_item and kpi_item.department_desc %}
-                            {{ kpi_item.department_desc }}
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
+                            {{ kpi_item.department_desc if kpi_item and kpi_item.department_desc else '-' }}
                         </td>
 
                         <td style="font-size: 0.85rem;">
-                            {% if kpi_item and kpi_item.activities %}
-                            {{ kpi_item.activities }}
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
+                            {{ kpi_item.activities if kpi_item and kpi_item.activities else '-' }}
                         </td>
 
                         <td style="font-size: 0.85rem;">
-                            {% if kpi_item and kpi_item.description %}
-                            {{ kpi_item.description }}
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
+                            {{ kpi_item.description if kpi_item and kpi_item.description else '-' }}
                         </td>
 
                         <td style="text-align: center;">
@@ -603,44 +712,71 @@
                             {% endif %}
                         </td>
 
-
-
                         <td>
                             <input type="number" step="0.01" name="kpi_{{ kpi_id }}" id="kpi_{{ kpi_id }}"
-                                class="form-control kpi-value-input" placeholder="Enter value" {% if kpi_item and
+                                class="form-control kpi-value-input"
+                                value="{{ kpi_item.value if kpi_item and kpi_item.value else '' }}" {% if kpi_item and
                                 (kpi_item.active=="0" or kpi_item.active==0) %}disabled{% endif %}>
                         </td>
+
+                        
+
                         <td style="text-align: center;">
-                            {% set image_filename = 'img/' + kpi_id|string + '.png' %}
-                            {% if kpi_item and kpi_item.image_url %}
-                            <a href="/img/{{ kpi_id }}" target="_blank" title="เปิดรูปภาพ KPI {{ kpi_id }}">
-                                <img src="{{ kpi_item.image_url }}" alt="KPI Image"
-                                    style="max-width: 80px; max-height: 80px; border-radius: 4px; cursor: pointer;">
-                            </a>
-                            {% else %}
-                            <a href="/img/{{ kpi_id }}" target="_blank" class="url-link"
-                                title="เปิดรูปภาพ KPI {{ kpi_id }}">
-                                📷 ดูรูป
-                            </a>
-                            {% endif %}
+                            {{ kpi_item.unit if kpi_item and kpi_item.unit else '-' }}
+                        </td>
+
+                        <td style="text-align: center;">
+                            {# กำหนด Path รูปภาพหลัก #}
+                            {% set fixed_img = '/static/img/' + kpi_id|string + '.png' %}
+
+                            <div class="kpi-image-container" id="container_{{ kpi_id }}"
+                                onclick="openImageModal('{{ fixed_img }}', '{{ kpi_id }}')"
+                                style="min-height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+
+                                <img src="{{ fixed_img }}"
+                                    style="max-width: 60px; max-height: 60px; object-fit: contain;" {# เมื่อเกิด Error:
+                                    1. หยุด Loop (onerror=null) 2. เปลี่ยนไปใช้รูป no-picture 3. ถ้ายังหา no-picture
+                                    ไม่เจออีก ให้ซ่อนรูปและปิด Link การคลิกที่ตัว Container #} onerror="this.onerror=null; 
+                      this.src='/static/img/no-picture.png'; 
+                      this.addEventListener('error', function() {
+                          this.style.display='none';
+                          let parent = document.getElementById('container_{{ kpi_id }}');
+                          parent.style.pointerEvents = 'none'; 
+                          parent.style.cursor = 'default';
+                          parent.innerHTML = '<span class=\'text-muted\' style=\'font-size: 0.8rem;\'>ไม่มีรูป</span>';
+                      });">
+                            </div>
                         </td>
 
                         <td>
                             {% if kpi_item and kpi_item.linkUrl %}
-                            <a href="{{ kpi_item.linkUrl }}" target="_blank" class="kpi-link">{{ kpi_item.source
-                                }}</a>
+                            <a href="{{ kpi_item.linkUrl }}" target="_blank" class="kpi-link">{{ kpi_item.source }}</a>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
 
+                        <td style="text-align: center;">
+                            <input type="radio" name="row_selector" value="{{ kpi_id }}" class="row-radio"
+                                onchange="highlightSingleRow(this)" {% if kpi_item and (kpi_item.active=='0' or
+                                kpi_item.active==0) %}disabled{% endif %}>
+                        </td>
 
-                        </tr>
-                        {% endfor %}
+
+
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
 
+        <div id="kpiImageModal" class="modal-custom" onclick="closeImageModal()">
+            <span class="close-modal">&times;</span>
+            <div class="modal-content-wrapper">
+                <img class="modal-content-img" id="imgFullSize">
+                <div id="modalCaption" class="modal-caption"></div>
+            </div>
+        </div>
 
         <div class="form-actions">
             <!-- <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">Cancel</button> -->
@@ -650,6 +786,10 @@
         </div>
     </form>
 </div>
+
+
+
+
 {% endblock %}
 
 {% block extra_js %}
@@ -871,4 +1011,81 @@
         tableBody.innerHTML = html;
     }
 </script>
+
+
+<!-- แบบ checkbox เลือกหลายแถว -->
+<!-- <script>
+    // ฟังก์ชันเลือก/ไม่เลือก ทั้งหมด
+    function toggleAll(source) {
+        checkboxes = document.getElementsByClassName('row-checkbox');
+        for (var i = 0, n = checkboxes.length; i < n; i++) {
+            if (!checkboxes[i].disabled) {
+                checkboxes[i].checked = source.checked;
+                highlightRow(checkboxes[i]);
+            }
+        }
+    }
+
+    // ฟังก์ชันเปลี่ยนสีแถวเมื่อติ๊ก Checkbox
+    function highlightRow(checkbox) {
+        const row = checkbox.closest('tr');
+        if (checkbox.checked) {
+            row.classList.add('selected-row');
+        } else {
+            row.classList.remove('selected-row');
+        }
+    }
+</script> -->
+
+
+<!-- แบบ Radio เลือกแถวเดียว -->
+<script>
+    function highlightSingleRow(radio) {
+        // ลบ class จากทุกแถว
+        document.querySelectorAll('.kpi-list tr').forEach(tr => {
+            tr.classList.remove('selected-row');
+        });
+
+        // เพิ่ม class ให้แถวที่ถูกเลือก
+        if (radio.checked) {
+            radio.closest('tr').classList.add('selected-row');
+        }
+    }
+</script>
+
+<style>
+    .selected-row {
+        background-color: #fff9c4 !important;
+        /* สีเหลืองอ่อน */
+    }
+</style>
+
+
+<!-- สำหรับ Modal แสดงรูปภาพขนาดเต็มเมื่อคลิกที่รูปขนาดเล็กในตาราง -->
+<script>
+    function openImageModal(imgSrc, kpiId) {
+        const modal = document.getElementById("kpiImageModal");
+        const modalImg = document.getElementById("imgFullSize");
+        const captionText = document.getElementById("modalCaption");
+
+        modal.style.display = "block";
+        modalImg.src = imgSrc;
+        captionText.innerHTML = "KPI ID: " + kpiId;
+    }
+
+    function closeImageModal() {
+        const modal = document.getElementById("kpiImageModal");
+        modal.style.display = "none";
+    }
+
+    // ปิด Modal เมื่อกดปุ่ม Esc
+    document.addEventListener('keydown', function (event) {
+        if (event.key === "Escape") {
+            closeImageModal();
+        }
+    });
+</script>
+
+
+
 {% endblock %}

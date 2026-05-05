@@ -81,16 +81,17 @@ def get_report_data():
     act."source", 
     act."linkUrl", 
     act.unit, 
-    act.source_result, 
     act.istarget,
 	dp.department_id, 
 	dp.department_desc,
 	grp.group_id, 
-    grp.group_desc
+    grp.group_desc,
+    gl.target AS year_target
 FROM public.data AS dt
 LEFT JOIN public.activities AS act ON dt.kpi_id = act.kpi_id
 LEFT JOIN public.department AS dp ON act.department_id = dp.department_id
 LEFT JOIN public."group" AS grp ON act.group_id = grp.group_id
+LEFT JOIN public.goals AS gl ON dt.kpi_id = gl.kpi_id AND gl.year = dt.year
 WHERE dt.year = {year}
 GROUP BY 
     dt.kpi_id, 
@@ -104,12 +105,12 @@ GROUP BY
     act."source", 
     act."linkUrl", 
     act.unit, 
-    act.source_result, 
     act.istarget,
 	dp.department_id, 
 	dp.department_desc,
 	grp.group_id, 
-    grp.group_desc
+    grp.group_desc,
+    gl.target
 ORDER BY CAST(dt.kpi_id AS INTEGER);
 
     """
@@ -165,7 +166,6 @@ def run_sync():
         error_msg = f"Unexpected error during sync: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return jsonify({"status": "error", "error": error_msg}), 500
-
 
 @data_bp.route("/api/sync/monthly-kpi", methods=["POST"])
 def sync_monthly_kpi():
@@ -269,20 +269,17 @@ def health_check():
         200,
     )
 
-
 @data_bp.errorhandler(404)
 def not_found(error):
     """Handle 404 errors"""
     logger.warning(f"404 error: {request.path}")
     return jsonify({"status": "error", "error": "Endpoint not found"}), 404
 
-
 @data_bp.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors"""
     logger.error(f"500 error: {str(error)}", exc_info=True)
     return jsonify({"status": "error", "error": "Internal server error"}), 500
-
 
 @data_bp.route("/api/data/get-monthly", methods=["GET"])
 def get_monthly_data():
@@ -326,7 +323,6 @@ def get_monthly_data():
     except Exception as e:
         logger.error(f"Error fetching monthly data: {str(e)}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 @data_bp.route("/api/data/batch-add", methods=["POST"])
 def batch_add_data():
@@ -393,7 +389,6 @@ def batch_add_data():
         logger.error(f"Error in batch add: {str(e)}", exc_info=True)
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 @data_bp.route("/api/kpi/<int:kpi_id>/link", methods=["GET"])
 def get_kpi_link(kpi_id):
     """
@@ -442,7 +437,6 @@ def get_kpi_link(kpi_id):
     except Exception as e:
         logger.error(f"Error fetching KPI link: {str(e)}", exc_info=True)
         return jsonify({"status": "error", "error": str(e)}), 500
-
 
 @data_bp.route("/api/query2", methods=["GET"])
 def get_query2_data():
@@ -539,7 +533,6 @@ ORDER BY CAST(dt.kpi_id AS INTEGER);
     except Exception as e:
         logger.error(f"Error fetching query2 data: {str(e)}", exc_info=True)
         return jsonify({"status": "error", "error": str(e)}), 500
-
 
 @data_bp.route("/add", methods=["GET", "POST"])
 def add_data():
@@ -732,3 +725,234 @@ def serve_kpi_image(kpi_id):
             return send_from_directory(os.path.join(current_app.static_folder, 'img'), 'no-image.jpg')
         else:
             return jsonify({"status": "error", "message": "Image not found"}), 404
+
+@data_bp.route("/api/goals", methods=["GET"])
+def get_goals():
+    """
+    Get KPI goals for a specific year and its previous year
+    GET /api/goals?year=2026
+    """
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+
+    year = request.args.get("year", datetime.now().year, type=int)
+    prev_year = year - 1
+
+    query = text("""
+        SELECT 
+            act.kpi_id,
+            act.activities,
+            act.unit,
+            g_prev.target AS prev_target,
+            g_curr.target AS curr_target
+        FROM public.activities act
+        LEFT JOIN public.goals g_prev ON act.kpi_id = g_prev.kpi_id AND g_prev.year = :prev_year
+        LEFT JOIN public.goals g_curr ON act.kpi_id = g_curr.kpi_id AND g_curr.year = :curr_year
+        ORDER BY CAST(act.kpi_id AS INTEGER) ASC;
+    """)
+
+    try:
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query, {"prev_year": prev_year, "curr_year": year})
+            data = [dict(row._mapping) for row in result]
+            
+            # Convert decimal to float for JSON
+            for row in data:
+                if row['prev_target'] is not None:
+                    row['prev_target'] = float(row['prev_target'])
+                if row['curr_target'] is not None:
+                    row['curr_target'] = float(row['curr_target'])
+
+            return jsonify({
+                "status": "success", 
+                "year": year, 
+                "prev_year": prev_year, 
+                "data": data
+            }), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@data_bp.route("/api/goals/batch-save", methods=["POST"])
+def batch_save_goals():
+    """
+    Save multiple KPI goals for a year
+    POST /api/goals/batch-save
+    """
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+
+    try:
+        payload = request.get_json()
+        year = payload.get("year")
+        goals = payload.get("goals", [])
+
+        if not year or not goals:
+            return jsonify({"status": "error", "message": "Missing year or goals"}), 400
+
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            query = text("""
+                INSERT INTO public.goals (kpi_id, year, target)
+                VALUES (:kpi_id, :year, :target)
+                ON CONFLICT (kpi_id, year) 
+                DO UPDATE SET target = EXCLUDED.target
+            """)
+
+            for item in goals:
+                # Handle empty strings or nulls
+                target = item.get("target")
+                if target == "" or target is None:
+                    target = None
+                else:
+                    target = float(target)
+
+                conn.execute(query, {
+                    "kpi_id": item["kpi_id"],
+                    "year": year,
+                    "target": target
+                })
+            conn.commit()
+
+        return jsonify({"status": "success", "message": f"Successfully saved {len(goals)} targets"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_bp.route("/settings")
+def settings_kpis():
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+    try:
+        engine = get_pg_engine()
+        with engine.connect() as conn:
+            # 1. Get the list of all KPIs with their current settings
+            kpi_settings_query = text("""
+                SELECT 
+                    a.kpi_id, 
+                    a.group_id, 
+                    a.department_id, 
+                    a."no", 
+                    a.sub_no, 
+                    a.activities, 
+                    a.description, 
+                    a.description2, 
+                    a."source", 
+                    a."linkUrl", 
+                    a.unit, 
+                    a.source_result, 
+                    a.istarget, 
+                    a.active,
+                    d.department_desc,
+                    g.group_desc
+                FROM public.activities a
+                LEFT JOIN public.department d ON a.department_id = d.department_id
+                LEFT JOIN public."group" g ON a.group_id = g.group_id
+                ORDER BY a.kpi_id
+            """)
+            result = conn.execute(kpi_settings_query)
+            kpis = [dict(row._mapping) for row in result]
+            
+            # 2. Get all departments and groups for dropdowns
+            departments_result = conn.execute(text("SELECT department_id, department_desc FROM public.department ORDER BY department_id"))
+            departments = [dict(row._mapping) for row in departments_result]
+            
+            groups_result = conn.execute(text('SELECT group_id, group_desc FROM public."group" ORDER BY group_id'))
+            groups = [dict(row._mapping) for row in groups_result]
+            
+            return render_template("setting.html", 
+                                   kpis=kpis, 
+                                   departments=departments, 
+                                   groups=groups)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+        
+
+@data_bp.route("/settings/save-kpi", methods=["POST"])
+def save_kpi():
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+    try:
+        data = request.json
+        kpi_id = data.get('kpi_id')
+        
+        engine = get_pg_engine()
+        with engine.begin() as conn:
+            # Update activities table
+            update_query = text("""
+                UPDATE public.activities 
+                SET 
+                    group_id = :group_id,
+                    department_id = :department_id,
+                    activities = :activities,
+                    description = :description,
+                    unit = :unit,
+                    "linkUrl" = :linkUrl,
+                    active = CAST(:active AS bit)
+                WHERE kpi_id = :kpi_id
+            """)
+            conn.execute(update_query, {
+                "group_id": data.get('group_id'),
+                "department_id": data.get('department_id'),
+                "activities": data.get('activities'),
+                "description": data.get('description'),
+                "unit": data.get('unit'),
+                "linkUrl": data.get('linkUrl'),
+                "active": '1' if data.get('active') else '0',
+                "kpi_id": kpi_id
+            })
+            
+            # (Removed update to public.kpis as table does not exist)
+            
+        return jsonify({"status": "success", "message": "KPI updated successfully"}), 200
+    except Exception as e:
+        logger.error(f"Error saving KPI: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@data_bp.route("/settings/add-kpi", methods=["POST"])
+def add_kpi():
+    from services.sync_service import get_pg_engine
+    from sqlalchemy import text
+    try:
+        data = request.json
+        kpi_id = data.get('kpi_id')
+        
+        engine = get_pg_engine()
+        with engine.begin() as conn:
+            # Check if KPI ID already exists
+            check = conn.execute(text("SELECT kpi_id FROM public.activities WHERE kpi_id = :kpi_id"), {"kpi_id": kpi_id}).fetchone()
+            if check:
+                return jsonify({"status": "error", "message": f"KPI ID {kpi_id} already exists"}), 400
+                
+            # Insert into activities table
+            insert_query = text("""
+                INSERT INTO public.activities (
+                    kpi_id, group_id, department_id, activities, description, unit, "linkUrl", active, istarget
+                ) VALUES (
+                    :kpi_id, :group_id, :department_id, :activities, :description, :unit, :linkUrl, CAST(:active AS bit), 'Y'
+                )
+            """)
+            conn.execute(insert_query, {
+                "kpi_id": kpi_id,
+                "group_id": data.get('group_id'),
+                "department_id": data.get('department_id'),
+                "activities": data.get('activities'),
+                "description": data.get('description'),
+                "unit": data.get('unit'),
+                "linkUrl": data.get('linkUrl'),
+                "active": '1' if data.get('active', True) else '0'
+            })
+            
+        return jsonify({"status": "success", "message": "KPI added successfully"}), 201
+    except Exception as e:
+        logger.error(f"Error adding KPI: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+
+
+
+# SELECT kpi_id, group_id, department_id, no, sub_no, activities, description, description2, source, \"linkUrl\", unit, source_result, istarget, active
+# 	FROM public.activities;
+

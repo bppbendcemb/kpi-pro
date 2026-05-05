@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - KPI Pro{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-section {
+        padding: 2rem 0;
+    }
+
+    .settings-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .settings-header {
+        border-bottom: 2px solid #f0f4f8;
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .kpi-table th {
+        background-color: #f7fafc;
+        color: #4a5568;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 12px 15px;
+        border-bottom: 2px solid #edf2f7;
+        text-align: left;
+    }
+
+    .kpi-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 0.9rem;
+        color: #2d3748;
+    }
+
+    .kpi-table tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-active { background-color: #c6f6d5; color: #22543d; }
+    .status-inactive { background-color: #fed7d7; color: #822727; }
+
+    .btn-edit {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+
+    .search-box {
+        max-width: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="settings-section">
+    <div class="container-fluid px-4">
+        <div class="settings-container">
+            <div class="settings-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">⚙️ KPI Settings</h2>
+                    <p class="text-muted mb-0">Manage KPI definitions, departments, and active status.</p>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="kpiSearch" class="form-control border-start-0" placeholder="Search KPIs...">
+                        </div>
+                    </div>
+                    <button class="btn btn-success rounded-pill px-4" onclick="openAddModal()">
+                        <i class="fas fa-plus-circle me-1"></i> Add New KPI
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="kpi-table" id="settingsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Group</th>
+                            <th>Department</th>
+                            <th>Activity & Description</th>
+                            <th>Unit</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kpi in kpis %}
+                        <tr data-kpi-id="{{ kpi.kpi_id }}">
+                            <td class="fw-bold">{{ kpi.kpi_id }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ kpi.group_desc or '-' }}</span></td>
+                            <td>{{ kpi.department_desc or '-' }}</td>
+                            <td>
+                                <div class="fw-bold">{{ kpi.activities }}</div>
+                                <div class="small text-muted">{{ kpi.description or '' }}</div>
+                            </td>
+                            <td>{{ kpi.unit or '-' }}</td>
+                            <td>
+                                {% if kpi.active == '1' %}
+                                <span class="status-badge status-active">Active</span>
+                                {% else %}
+                                <span class="status-badge status-inactive">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-outline-primary btn-edit" 
+                                        data-kpi='{{ kpi | tojson | safe }}'
+                                        onclick="handleEditClick(this)">
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="editKpiModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">✏️ Edit KPI Definition</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editKpiForm">
+                        <input type="hidden" id="edit_kpi_id">
+                        <div class="row g-3">
+                            <div class="col-md-4" id="kpiIdField" style="display:none;">
+                                <label class="form-label fw-bold">KPI ID (Unique Number)</label>
+                                <input type="number" class="form-control" id="add_kpi_id_real">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Activities (KPI Name)</label>
+                                <input type="text" class="form-control" id="edit_activities" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Description</label>
+                                <textarea class="form-control" id="edit_description" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Group</label>
+                                <select class="form-select" id="edit_group_id">
+                                    <option value="">-- Select Group --</option>
+                                    {% for g in groups %}
+                                    <option value="{{ g.group_id }}">{{ g.group_desc }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Department</label>
+                                <select class="form-select" id="edit_department_id">
+                                    <option value="">-- Select Department --</option>
+                                    {% for d in departments %}
+                                    <option value="{{ d.department_id }}">{{ d.department_desc }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Unit</label>
+                                <input type="text" class="form-control" id="edit_unit">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Link URL</label>
+                                <input type="text" class="form-control" id="edit_linkUrl">
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="edit_active" checked>
+                                    <label class="form-check-label fw-bold" for="edit_active">Active (Visible in Reports)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveBtn" onclick="saveKpiChanges()">
+                        <i class="fas fa-save me-1"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const editModal = new bootstrap.Modal(document.getElementById('editKpiModal'));
+    let isAdding = false;
+
+    function handleEditClick(btn) {
+        const kpi = JSON.parse(btn.getAttribute('data-kpi'));
+        editKpi(kpi);
+    }
+
+    function openAddModal() {
+        isAdding = true;
+        document.getElementById('modalTitle').textContent = '➕ Add New KPI Definition';
+        document.getElementById('edit_kpi_id').value = '';
+        document.getElementById('kpiIdField').style.display = 'block';
+        document.getElementById('add_kpi_id_real').value = '';
+        document.getElementById('edit_activities').value = '';
+        document.getElementById('edit_description').value = '';
+        document.getElementById('edit_group_id').value = '';
+        document.getElementById('edit_department_id').value = '';
+        document.getElementById('edit_unit').value = '';
+        document.getElementById('edit_linkUrl').value = '';
+        document.getElementById('edit_active').checked = true;
+        document.getElementById('saveBtn').innerHTML = '<i class="fas fa-plus me-1"></i> Add KPI';
+        
+        editModal.show();
+    }
+
+    function editKpi(kpi) {
+        isAdding = false;
+        document.getElementById('modalTitle').textContent = '✏️ Edit KPI Definition';
+        document.getElementById('edit_kpi_id').value = kpi.kpi_id;
+        document.getElementById('kpiIdField').style.display = 'none';
+        document.getElementById('edit_activities').value = kpi.activities || '';
+        document.getElementById('edit_description').value = kpi.description || '';
+        document.getElementById('edit_group_id').value = kpi.group_id || '';
+        document.getElementById('edit_department_id').value = kpi.department_id || '';
+        document.getElementById('edit_unit').value = kpi.unit || '';
+        document.getElementById('edit_linkUrl').value = kpi.linkUrl || '';
+        document.getElementById('edit_active').checked = (kpi.active === '1');
+        document.getElementById('saveBtn').innerHTML = '<i class="fas fa-save me-1"></i> Save Changes';
+        
+        editModal.show();
+    }
+
+    async function saveKpiChanges() {
+        const url = isAdding ? '/settings/add-kpi' : '/settings/save-kpi';
+        const data = {
+            kpi_id: isAdding ? document.getElementById('add_kpi_id_real').value : document.getElementById('edit_kpi_id').value,
+            activities: document.getElementById('edit_activities').value,
+            description: document.getElementById('edit_description').value,
+            group_id: document.getElementById('edit_group_id').value,
+            department_id: document.getElementById('edit_department_id').value,
+            unit: document.getElementById('edit_unit').value,
+            linkUrl: document.getElementById('edit_linkUrl').value,
+            active: document.getElementById('edit_active').checked
+        };
+
+        if (isAdding && !data.kpi_id) {
+            alert('Please enter a KPI ID');
+            return;
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                editModal.hide();
+                location.reload();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to process request');
+        }
+    }
+
+    // Simple search filter
+    document.getElementById('kpiSearch').addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#settingsTable tbody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(value) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
